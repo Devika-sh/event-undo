@@ -1,0 +1,678 @@
+/* ==========================================================================
+   EventUndo — Event Details page
+   Page-specific components only. The shared components this page reuses —
+   Navbar, Filter Chip (.chip), Event Listing Card (.card + .like-btn +
+   .detail), Footer — all come from styles.css untouched.
+   Every value below resolves to a token from tokens.css. No raw hexes.
+   ========================================================================== */
+
+/* The shared `.icon-mask` helper lives in styles.css — both pages use it. */
+
+/* ==========================================================================
+   Masthead — faint eventundo artwork with the header row and cover banner
+   layered over it.
+   ========================================================================== */
+
+.detail-head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4xl);          /* Figma 40 → nearest token 48 */
+  padding-top: var(--space-5xl);  /* Figma 83 → nearest token 80 */
+}
+
+/* Wraps the mark so the phone breakpoint can swap in the dedicated mobile
+   background asset via <source> instead of scaling the desktop artwork down.
+   `display: contents` so the wrapper generates no box of its own — the mark
+   stays absolutely positioned against .detail-head, and the (hidden) <source>
+   doesn't consume a gap. Same pattern as the Organizations/Team/Profile pages. */
+.detail-head__picture { display: contents; }
+.detail-head__picture source { display: none; }
+
+/* Artwork is a 1280x564 wordmark lockup already at ~10% alpha in the PNG —
+   it needs no opacity of its own. Figma anchors it to the bottom of a 438-tall
+   frame, cropping the top; `cover` + bottom object-position reproduces that.
+   Negative z-index keeps it strictly behind the header's own content — matching
+   the background frame's place in the Figma layer stack, and safe even where
+   the mark's height doesn't line up exactly with the header's flow height. */
+.detail-head__mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 438px;
+  object-fit: cover;
+  object-position: center bottom;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.detail-head__bar,
+.banner {
+  position: relative;
+  z-index: 1;
+}
+
+.detail-head__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6xl);          /* Figma 158 → nearest token 160 */
+}
+
+/* Wordmark carries the Logo color gradient inside the SVG. */
+.brand-mark { width: 151px; height: 25px; }
+
+/* --- Image / `Event Details` variant (1280x300 cover banner) ---
+   The scrim + title/organizer overlay the component ships is switched off on
+   this frame: the event name is set as the page heading below instead. */
+.banner {
+  height: 300px;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+
+.banner__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ==========================================================================
+   Event heading — title + organizer
+   ========================================================================== */
+
+.event-head {
+  margin-top: var(--space-4xl);   /* Figma 51 → nearest token 48 */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+}
+
+.event-head__title {
+  margin: 0;
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h1);   /* 60 — Featured/event_title scale */
+  line-height: var(--line-height-heading-h1);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+/* Group/pages/sub-title — h3 Regular in text-secondary. */
+.event-head__org {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h3);
+  line-height: var(--line-height-heading-h3);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   Question Card (RSVP)
+   ========================================================================== */
+
+.question {
+  position: relative;
+  margin-top: var(--space-4xl);
+  padding: var(--space-3xl) var(--space-4xl);
+  background: var(--bg-white);
+  /* Same lifted right/bottom brand edge as the Event Listing Card, drawn as an
+     inset shadow so it doesn't consume layout width. Figma radius is a raw 25;
+     bound to radius/2xl to match the banner and cards. */
+  border-radius: var(--radius-2xl);
+  box-shadow: inset calc(-1 * var(--width-2xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand);
+  overflow: hidden;               /* clips the oversized watermark */
+}
+
+.question__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  /* Figma binds this gap to radius/xl (20) — a radius token used for spacing.
+     Corrected to the equivalent space/2xl. */
+  gap: var(--space-2xl);
+}
+
+/* Display s/Regular in text-brand. */
+.question__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h6);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-brand);
+}
+
+.question__answers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4xl);
+}
+
+/* eventundo watermark — 783x132, its 0.2 opacity and Logo color gradient are
+   inside the SVG. Anchored bottom-right with the few px of overhang Figma has
+   (left 504 in a 1280 card), clipped by the card. `max-width: none` overrides
+   the global img rule so it keeps its full width. */
+.question__mark {
+  position: absolute;
+  right: -7px;
+  bottom: -1px;
+  width: 783px;
+  height: 132px;
+  max-width: none;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* --- Checkbox --- */
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-lg);
+  cursor: pointer;
+}
+
+/* Native control stays in the a11y tree but is visually replaced by __box. */
+.checkbox__input {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Unselected */
+.checkbox__box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-inactive);
+  border: var(--width-lg) solid var(--border-inactive);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+/* `check` — 20x20 frame (icon-button size), 13.33x9.17 glyph, icon-white. */
+.checkbox__check {
+  width: 20px;
+  height: 20px;
+  background-color: var(--icon-white);
+  -webkit-mask-image: url("Assets/icon-check.svg");
+          mask-image: url("Assets/icon-check.svg");
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+/* Selected — brand fill, light border-active ring, white check. */
+.checkbox__input:checked + .checkbox__box {
+  background: var(--bg-brand);
+  border-color: var(--border-active);
+}
+.checkbox__input:checked + .checkbox__box .checkbox__check { opacity: 1; }
+
+/* Focus ring is undefined in Figma — derived from border-brand, flag for design. */
+.checkbox__input:focus-visible + .checkbox__box {
+  outline: var(--width-xl) solid var(--border-brand);
+  outline-offset: var(--space-xs);
+}
+
+.checkbox__label {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h6);   /* Display s/Regular */
+  font-weight: var(--font-weight-regular);
+  color: var(--text-primary);
+}
+
+/* --- CTA Button ("Register Now") ---
+   The larger 46px / trailing-icon treatment the question card uses. Figma's raw
+   radius 10 is bound to radius/md, and its raw 18px padding / 10px gap to
+   space/xl / space/md per the Button spec. */
+.btn-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  height: 46px;
+  padding: 0 var(--space-xl);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-sm);      /* CTA/Button */
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body-sm);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+/* Pending / disabled — the state the card ships in, before an answer is picked. */
+.btn-cta:disabled {
+  background: var(--bg-inactive);
+  border: var(--width-lg) solid var(--border-inactive);
+  color: var(--text-tertiary);
+  cursor: default;
+}
+.btn-cta:disabled .btn-cta__icon { background-color: var(--icon-inactive); }
+
+/* Enabled — swaps to the primary Button treatment once an answer is chosen. */
+.btn-cta:not(:disabled) {
+  background: var(--bg-brand);
+  border: var(--width-lg) solid var(--icon-black);
+  color: var(--text-white);
+}
+.btn-cta:not(:disabled) .btn-cta__icon { background-color: var(--icon-white); }
+
+/* No hover variant exists in Figma — derived from tokens, flag for design. */
+.btn-cta:not(:disabled):hover { background: var(--colour-orange-600); }
+
+/* Untitled UI `arrow-up-right` at the icon set's inline frame size (18).
+   Figma ships this slot as a 16px *filled* arrow with sharp corners, which
+   breaks the icon rules (stroke only, 2px, round cap/join) and isn't one of the
+   nine icons in the library — so it's rebuilt to the documented construction.
+   Flag for design: the arrow needs adding to the Untitled UI set properly. */
+.btn-cta__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  -webkit-mask-image: url("Assets/icon-arrow-up-right.svg");
+          mask-image: url("Assets/icon-arrow-up-right.svg");
+}
+
+/* ==========================================================================
+   Details block — Event Details rows + About
+   ========================================================================== */
+
+.detail-body {
+  margin-top: var(--space-4xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5xl);
+}
+
+/* --- Event Details Row (Date / Time / Venue / Cost) --- */
+
+.meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.meta__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.meta__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  background-color: var(--icon-brand);
+}
+
+.meta__icon--date  { -webkit-mask-image: url("Assets/icon-calendar.svg");   mask-image: url("Assets/icon-calendar.svg"); }
+.meta__icon--time  { -webkit-mask-image: url("Assets/icon-clock.svg");      mask-image: url("Assets/icon-clock.svg"); }
+.meta__icon--venue { -webkit-mask-image: url("Assets/icon-marker-pin.svg"); mask-image: url("Assets/icon-marker-pin.svg"); }
+.meta__icon--cost  { -webkit-mask-image: url("Assets/icon-rupee.svg");      mask-image: url("Assets/icon-rupee.svg"); }
+
+.meta__text {
+  font-size: var(--font-size-body-xs);      /* Body l/Semi Bold */
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+/* --- About --- */
+
+.about {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+}
+
+/* About-Title — h2 Regular. */
+.about__title {
+  margin: 0;
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h2);
+  line-height: var(--line-height-heading-h2);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-primary);
+}
+
+.about__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.about__text {
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-secondary);
+}
+
+.about__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xl);
+}
+
+/* ==========================================================================
+   See Friends Attending
+   On this frame it's the bare divider treatment — rule, brand link, avatar
+   stack — not the bordered Friends Card.
+   ========================================================================== */
+
+.friends {
+  margin-top: var(--space-xl);              /* Figma 17 → nearest token 16 */
+  padding: var(--space-3xl) 0;
+  border-top: var(--width-lg) solid var(--colour-alpha-70);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+}
+
+.friends__link {
+  width: fit-content;
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-brand);
+}
+.friends__link:hover { text-decoration: underline; }
+
+.friends__stack { display: flex; isolation: isolate; }
+
+/* Avatars overlap by a raw -10 (not on the spacing scale — Figma value). */
+.friends__stack li { position: relative; }
+.friends__stack li + li { margin-left: -10px; }
+
+/* Leftmost avatar sits on top of the stack. */
+.friends__stack li:nth-child(1) { z-index: 4; }
+.friends__stack li:nth-child(2) { z-index: 3; }
+.friends__stack li:nth-child(3) { z-index: 2; }
+.friends__stack li:nth-child(4) { z-index: 1; }
+
+.friends__avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-3xl);         /* circular on a 50px box */
+  border: var(--width-lg) solid var(--border-active);
+  object-fit: cover;
+}
+
+/* ==========================================================================
+   More Events — card carousel with Chevron Buttons
+   ========================================================================== */
+
+.more-events {
+  margin-top: var(--space-4xl);             /* Figma 51 → nearest token 48 */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+}
+
+.more-events__title {
+  margin: 0;
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h3);
+  line-height: var(--line-height-heading-h3);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-primary);
+}
+
+.more-events__viewport { position: relative; }
+
+/* Three 400-wide cards plus two 48 gaps overrun the 1280 content box by 16 —
+   as in Figma. The row pages horizontally via the chevrons. */
+.more-events__track {
+  display: flex;
+  gap: var(--space-4xl);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  /* `proximity`, not `mandatory`: mandatory snapping fights the chevrons'
+     programmatic scroll and can snap the row straight back to where it was. */
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.more-events__track::-webkit-scrollbar { display: none; }
+
+/* Paging is animated via scroll-behavior above, so honouring reduced motion is
+   a matter of turning it off here — the chevrons don't force a behaviour. */
+@media (prefers-reduced-motion: reduce) {
+  .more-events__track { scroll-behavior: auto; }
+}
+
+.more-events__track > .card {
+  flex: 0 0 min(400px, 100%);
+  scroll-snap-align: start;
+}
+
+/* --- Chevron Button (Navigation) ---
+   54x54, straddling the content edges as in Figma (a 1331-wide row centred on
+   the 1280 content box); the page's 80px gutter absorbs the overhang.
+   No shadow — EventUndo doesn't use elevation. */
+.chev {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: var(--radius-full);
+  background: var(--bg-white);
+  border: var(--width-lg) solid var(--border-brand);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.chev--prev { left: -26px; }
+.chev--next { right: -26px; }
+
+.chev__icon {
+  width: 18px;
+  height: 18px;
+  background-color: var(--icon-brand);
+}
+
+/* Only the left-pointing `chevron-left` ships in the icon set, so "next" is the
+   same glyph mirrored — one asset, and the two are exact mirrors by construction. */
+.chev__icon {
+  -webkit-mask-image: url("Assets/icon-chevron-left.svg");
+          mask-image: url("Assets/icon-chevron-left.svg");
+}
+.chev--next .chev__icon { transform: scaleX(-1); }
+
+/* Disabled — nothing to page to. */
+.chev:disabled {
+  border-color: var(--border-inactive);
+  cursor: default;
+}
+.chev:disabled .chev__icon { background-color: var(--icon-inactive); }
+
+/* No hover variant exists in Figma — derived from tokens, flag for design. */
+.chev:not(:disabled):hover { background: var(--bg-hover); }
+
+/* ==========================================================================
+   Footer — shared component; only this page's rhythm to it differs.
+   ========================================================================== */
+
+.detail-page .footer { margin-top: var(--space-4xl); }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 1100px) {
+  .detail-head { padding-top: var(--space-4xl); }
+  .detail-head__mark { height: 300px; }
+
+  /* The desktop navbar's 80px link gaps make it wider than the content box
+     below ~1100. Tighten its internal rhythm and let the header row wrap so
+     nothing spills. Scoped to this page's header. */
+  .detail-head__bar {
+    flex-wrap: wrap;
+    gap: var(--space-xl) var(--space-3xl);
+    justify-content: space-between;
+  }
+  .detail-head__bar .navbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-sm) var(--space-3xl);
+    padding: var(--space-lg) var(--space-3xl);
+  }
+
+  .event-head__title {
+    font-size: var(--font-size-heading-h3);
+    line-height: var(--line-height-heading-h3);
+  }
+  .event-head__org {
+    font-size: var(--font-size-heading-h5);
+    line-height: var(--line-height-heading-h5);
+  }
+
+  .question { padding: var(--space-3xl); }
+  .about__title {
+    font-size: var(--font-size-heading-h3);
+    line-height: var(--line-height-heading-h3);
+  }
+  .more-events__title {
+    font-size: var(--font-size-heading-h4);
+    line-height: var(--line-height-heading-h4);
+  }
+
+  /* Stack the details block; the meta rows read as a row above About. */
+  .detail-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3xl);
+  }
+  .meta { flex-direction: row; flex-wrap: wrap; gap: var(--space-lg) var(--space-3xl); }
+
+  /* Gutter is 24 here, so the chevrons tuck inside the viewport instead. */
+  .chev--prev { left: var(--space-md); }
+  .chev--next { right: var(--space-md); }
+}
+
+/* ==========================================================================
+   Phone — mirrors the iPhone 14 Plus frame (node 183:8084, 428 wide). The
+   Mobile Nav Bar replaces the logo + desktop navbar row, and — per that
+   frame — the RSVP Question Card is dropped entirely; the page runs straight
+   from the title into the event-details rows, About, Friends and More Events.
+   ========================================================================== */
+
+@media (max-width: 720px) {
+  /* Figma's outer container is py/space-3xl (24), not the desktop 80. */
+  .detail-head {
+    gap: var(--space-3xl);            /* Navbar row → banner image, Figma 24 */
+    padding-top: var(--space-3xl);
+  }
+
+  /* `mobile bg.png` is the frame's own 428x187 crop, so it sits full-bleed at
+     its natural ratio — no cover-crop needed. It bleeds past the page's 14px
+     gutters, which .page's overflow:hidden clips. Same treatment as the
+     Discover, Organizations, Team and Profile pages' phone masthead. */
+  .detail-head__mark {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100vw;
+    max-width: none;      /* the global img cap would otherwise clamp this to 100% */
+    height: auto;
+  }
+
+  /* --- Nav: logo + desktop navbar out; the Mobile Nav Bar pill carries its
+     own wordmark and a hamburger toggle instead. --- */
+  .detail-head__brand { display: none; }
+  .detail-head__bar { display: block; }
+
+  /* This header's bar sits in normal flow (no shared .navbar-wrap column here),
+     so it needs its own open-state positioning to stay above the full-screen
+     menu overlay. Same values as the shared .navbar-wrap rule other pages use. */
+  .detail-head__bar[data-menu-open] {
+    position: fixed;
+    top: var(--space-3xl);
+    left: 14px;
+    right: 14px;
+    z-index: 11;
+  }
+  .detail-head__bar[data-menu-open] .navbar-mobile {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  /* --- Banner: Image `Event Details` variant scales down to Figma's own
+     mobile instance size (88.594 tall) rather than the desktop 300. Its
+     radius is bound to the `radius/2xl` *variable name* in Figma but the
+     instance has been scaled, so the effective value (9.45) no longer matches
+     that token — nearest real token is radius/sm (8); flagged for design. --- */
+  .banner {
+    height: 89px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* --- Title: Display m/Medium (32) + Display s/Regular (20), 2px apart —
+     down from the desktop's 60/40 pairing, though the weights stay the same. --- */
+  .event-head {
+    margin-top: var(--space-3xl);     /* Banner → title, Figma 24 */
+    gap: var(--space-xs);
+  }
+  .event-head__title {
+    font-size: var(--font-size-heading-h4);
+    line-height: var(--line-height-heading-h4);
+  }
+  .event-head__org {
+    font-size: var(--font-size-heading-h6);
+    line-height: var(--line-height-heading-h6);
+  }
+
+  /* --- Question Card: not part of this frame at all — Yes/No RSVP is a
+     desktop-only affordance on this design. --- */
+  .question { display: none; }
+
+  /* --- Event Details rows: back to a plain vertical list (Figma gap 16),
+     undoing the tablet breakpoint's row-wrap treatment. --- */
+  .meta { flex-direction: column; gap: var(--space-xl); }
+
+  /* --- About: tighter title→body gap (12, not 24); Display m/Medium (32,
+     not Display l/Regular 48) heading; Body xl/Regular (16, not Body 2xl/
+     Regular 20) copy; tag row gap drops to 8/20 (Figma's raw 9 rounds to the
+     nearest token, space/md). --- */
+  .about { gap: var(--space-lg); }
+  .about__title {
+    font-size: var(--font-size-heading-h4);
+    line-height: var(--line-height-heading-h4);
+  }
+  .about__text { font-size: var(--font-size-body-sm); }
+  .about__tags { gap: var(--space-md) var(--space-2xl); }
+
+  /* --- See Friends Attending: the mobile frame drops the divider rule and
+     tightens padding/gap from 24 (space/3xl) to 12 (space/lg). --- */
+  .friends {
+    padding: var(--space-lg) 0;
+    border-top: none;
+    gap: var(--space-lg);
+  }
+
+  /* --- More Events: heading matches About's Display m/Medium treatment;
+     title→card gap tightens to 20 (space/2xl). --- */
+  .more-events {
+    margin-top: var(--space-3xl);     /* Friends group → More Events, Figma 24 */
+    gap: var(--space-2xl);
+  }
+  .more-events__title {
+    font-size: var(--font-size-heading-h4);
+    line-height: var(--line-height-heading-h4);
+  }
+
+  /* Card's lifted brand edge scales down from width/2xl (3) on both sides to
+     an asymmetric width/xl (2) right / width/2xl (3) bottom — the same
+     downshift the Profile Card's and Org Card's mobile variants make. Scoped
+     to this page: the shared .card rule elsewhere is untouched. */
+  .detail-page .card {
+    box-shadow: inset calc(-1 * var(--width-xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand);
+  }
+}

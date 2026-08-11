@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalyst Evening Cafe — eventundo</title>
+  <!-- Google Sans Flex — the EventUndo typeface. Variable: opsz 6..144, wght 1..1000 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" />
+  <link rel="stylesheet" href="tokens.css" />
+  <!-- Shared components: navbar, chip, card, like button, footer. -->
+  <link rel="stylesheet" href="styles.css" />
+  <!-- This page's own components. -->
+  <link rel="stylesheet" href="event-details.css" />
+</head>
+<body>
+
+<div class="page detail-page">
+
+  <!-- ===== Masthead: faint wordmark artwork with the header row + cover banner over it ===== -->
+  <header class="detail-head">
+    <picture class="detail-head__picture">
+      <!-- The phone frame ships its own 428x187 background crop rather than a
+           scaled-down desktop lockup. Spaces MUST be percent-encoded here:
+           srcset parses whitespace as the URL/descriptor delimiter, so a raw
+           space silently discards the source. Same asset the Organizations,
+           Team and Profile pages use. -->
+      <source media="(max-width: 720px)" srcset="Assets/mobile%20bg.png"
+              width="428" height="187" />
+      <img class="detail-head__mark" src="Assets/Detail Masthead.png" alt=""
+           width="1280" height="564" />
+    </picture>
+
+    <div class="detail-head__bar">
+      <a class="detail-head__brand" href="index.html" aria-label="eventundo — home">
+        <img class="brand-mark" src="Assets/eventundo-logo.svg" alt="eventundo"
+             width="151" height="25" />
+      </a>
+
+      <!-- Navbar (Desktop) — active: Discover -->
+      <nav class="navbar" aria-label="Primary">
+        <a class="navbar__link navbar__link--active" href="index.html" aria-current="page">Discover</a>
+        <a class="navbar__link" href="organizations.html">Organizations</a>
+        <a class="navbar__link" href="team.html">The Team</a>
+        <a class="navbar__link" href="profile.html">Profile</a>
+      </nav>
+
+      <!-- Navbar (Mobile) — gradient wordmark left, menu toggle right.
+           Reused verbatim from the Discover page's shared styles.css rules. -->
+      <nav class="navbar-mobile" aria-label="Primary">
+        <a class="navbar-mobile__logo" href="index.html">
+          <img src="Assets/eventundo-logo.svg" alt="eventundo" width="99" height="16" />
+        </a>
+        <button class="navbar-btn" type="button" aria-expanded="false"
+                aria-controls="mobile-menu" aria-label="Open menu">
+          <span class="navbar-btn__icon icon-mask" aria-hidden="true"></span>
+        </button>
+      </nav>
+
+      <!-- Expanded menu panel. Not part of the Figma component — built once
+           for the Discover page and reused here as-is. -->
+      <div class="mobile-menu" id="mobile-menu" hidden>
+        <nav class="mobile-menu__links" aria-label="Sections">
+          <a class="mobile-menu__link mobile-menu__link--active" href="index.html" aria-current="page">Discover</a>
+          <a class="mobile-menu__link" href="organizations.html">Organizations</a>
+          <a class="mobile-menu__link" href="team.html">The Team</a>
+          <a class="mobile-menu__link" href="profile.html">Profile</a>
+        </nav>
+        <img class="mobile-menu__mark" src="Assets/Hamburger Logo.png" alt=""
+             width="428" height="274" />
+      </div>
+    </div>
+
+    <!-- Image / `Event Details` variant — 1280x300 cover banner, no scrim overlay -->
+    <div class="banner">
+      <img class="banner__photo" src="Assets/Event Banner.jpg"
+           alt="Attendee at Catalyst Evening Cafe 2.0, cafe glasses in the foreground"
+           width="1600" height="900" />
+    </div>
+  </header>
+
+  <!-- ===== Event heading ===== -->
+  <section class="event-head">
+    <h1 class="event-head__title">Catalyst Evening Cafe</h1>
+    <p class="event-head__org">by Catalyst IEDC</p>
+  </section>
+
+  <!-- ===== Question Card (RSVP) ===== -->
+  <section class="question" aria-labelledby="rsvp-question">
+    <form class="question__body" onsubmit="return false;">
+      <p class="question__title" id="rsvp-question">Are you Attending this Event?</p>
+
+      <!-- Single-choice question: one answer resolves the prompt. -->
+      <div class="question__answers" role="radiogroup" aria-labelledby="rsvp-question">
+        <label class="checkbox">
+          <input class="checkbox__input" type="radio" name="rsvp" value="yes" />
+          <span class="checkbox__box">
+            <!-- Untitled UI `check` — exported from the Checkbox `Selected`
+                 variant in the EU Design System library. -->
+            <span class="checkbox__check icon-mask" aria-hidden="true"></span>
+          </span>
+          <span class="checkbox__label">Yes</span>
+        </label>
+
+        <label class="checkbox">
+          <input class="checkbox__input" type="radio" name="rsvp" value="no" />
+          <span class="checkbox__box">
+            <span class="checkbox__check icon-mask" aria-hidden="true"></span>
+          </span>
+          <span class="checkbox__label">No</span>
+        </label>
+      </div>
+
+      <!-- Ships disabled; enables once an answer is picked. -->
+      <button class="btn-cta" type="submit" disabled>
+        Register Now
+        <span class="btn-cta__icon icon-mask" aria-hidden="true"></span>
+      </button>
+    </form>
+
+    <img class="question__mark" src="Assets/eventundo-watermark.svg" alt=""
+         width="783" height="132" aria-hidden="true" />
+  </section>
+
+  <!-- ===== Event Details rows + About ===== -->
+  <section class="detail-body">
+    <ul class="meta">
+      <li class="meta__row">
+        <span class="meta__icon meta__icon--date icon-mask" aria-hidden="true"></span>
+        <span class="meta__text">19th July 2026</span>
+      </li>
+      <li class="meta__row">
+        <span class="meta__icon meta__icon--time icon-mask" aria-hidden="true"></span>
+        <span class="meta__text">5:30 PM</span>
+      </li>
+      <li class="meta__row">
+        <span class="meta__icon meta__icon--venue icon-mask" aria-hidden="true"></span>
+        <span class="meta__text">Seminar Hall 2</span>
+      </li>
+      <li class="meta__row">
+        <span class="meta__icon meta__icon--cost icon-mask" aria-hidden="true"></span>
+        <span class="meta__text">Free</span>
+      </li>
+    </ul>
+
+    <div class="about">
+      <h2 class="about__title">About</h2>
+      <div class="about__body">
+        <p class="about__text">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+          incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+          exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
+          irure dolor in reprehenderit.
+        </p>
+        <div class="about__tags">
+          <span class="chip">Networking</span>
+          <span class="chip">Offline</span>
+          <span class="chip">Startup</span>
+          <span class="chip">Open Mic</span>
+          <span class="chip">Beginner</span>
+          <span class="chip">IEDC</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== See Friends Attending ===== -->
+  <section class="friends">
+    <a class="friends__link" href="#">See Friends Attending</a>
+    <ul class="friends__stack">
+      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Aparna R" width="50" height="50" /></li>
+      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Nikhil V" width="50" height="50" /></li>
+      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Sneha M" width="50" height="50" /></li>
+      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Arjun K" width="50" height="50" /></li>
+    </ul>
+  </section>
+
+  <!-- ===== More Events ===== -->
+  <section class="more-events" aria-labelledby="more-events-title">
+    <h2 class="more-events__title" id="more-events-title">More Events from Catalyst IEDC</h2>
+
+    <div class="more-events__viewport">
+      <div class="more-events__track" id="more-events-track" tabindex="0"
+           role="group" aria-label="More events from Catalyst IEDC">
+
+        <!-- Card 1 -->
+        <article class="card">
+          <div class="card__media">
+            <img class="card__photo" src="Assets/Event Card Image.png" alt=""
+                 width="360" height="300" />
+            <div class="card__scrim paint-blur">
+              <p class="card__event-title">Catalyst Evening Cafe</p>
+              <p class="card__organizer">by Catalyst IEDC</p>
+            </div>
+            <!-- Absolute inside the 360x300 media frame at Figma X 312 / Y 14. -->
+            <button class="like-btn" type="button" aria-pressed="false" aria-label="Save Catalyst Evening Cafe">
+              <!-- Untitled UI `heart`, exported vector. 20x20 frame; the glyph is
+                   16.67 x 14.86 and the translate seats it at x=1.67 y=2.5 per the
+                   icon spec. Inlined rather than masked because the Liked state
+                   hides the stroke and fills the shape instead. -->
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <g transform="translate(0.6667 1.5)">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
+                </g>
+              </svg>
+            </button>
+          </div>
+          <div class="card__details">
+            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">2nd Aug 2026</span></div>
+            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">5:30 PM</span></div>
+            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">Free</span></div>
+          </div>
+          <div class="card__tags">
+            <span class="chip">Networking</span>
+            <span class="chip">Offline</span>
+            <span class="chip">Startup</span>
+            <span class="chip">Open Mic</span>
+          </div>
+        </article>
+
+        <!-- Card 2 -->
+        <article class="card">
+          <div class="card__media">
+            <img class="card__photo" src="Assets/Event Card Image.png" alt=""
+                 width="360" height="300" />
+            <div class="card__scrim paint-blur">
+              <p class="card__event-title">Catalyst Pitch Night</p>
+              <p class="card__organizer">by Catalyst IEDC</p>
+            </div>
+            <!-- Absolute inside the 360x300 media frame at Figma X 312 / Y 14. -->
+            <button class="like-btn" type="button" aria-pressed="false" aria-label="Save Catalyst Pitch Night">
+              <!-- Untitled UI `heart`, exported vector. 20x20 frame; the glyph is
+                   16.67 x 14.86 and the translate seats it at x=1.67 y=2.5 per the
+                   icon spec. Inlined rather than masked because the Liked state
+                   hides the stroke and fills the shape instead. -->
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <g transform="translate(0.6667 1.5)">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
+                </g>
+              </svg>
+            </button>
+          </div>
+          <div class="card__details">
+            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">16th Aug 2026</span></div>
+            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">6:00 PM</span></div>
+            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">₹99</span></div>
+          </div>
+          <div class="card__tags">
+            <span class="chip">Networking</span>
+            <span class="chip">Offline</span>
+            <span class="chip">Pitching</span>
+            <span class="chip">Startup</span>
+            <span class="chip">Beginner</span>
+          </div>
+        </article>
+
+        <!-- Card 3 -->
+        <article class="card">
+          <div class="card__media">
+            <img class="card__photo" src="Assets/Event Card Image.png" alt=""
+                 width="360" height="300" />
+            <div class="card__scrim paint-blur">
+              <p class="card__event-title">Catalyst Design Jam</p>
+              <p class="card__organizer">by Catalyst IEDC</p>
+            </div>
+            <!-- Absolute inside the 360x300 media frame at Figma X 312 / Y 14. -->
+            <button class="like-btn" type="button" aria-pressed="true" aria-label="Unsave Catalyst Design Jam">
+              <!-- Untitled UI `heart`, exported vector. 20x20 frame; the glyph is
+                   16.67 x 14.86 and the translate seats it at x=1.67 y=2.5 per the
+                   icon spec. Inlined rather than masked because the Liked state
+                   hides the stroke and fills the shape instead. -->
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <g transform="translate(0.6667 1.5)">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
+                </g>
+              </svg>
+            </button>
+          </div>
+          <div class="card__details">
+            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">30th Aug 2026</span></div>
+            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">5:30 PM</span></div>
+            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">Free</span></div>
+          </div>
+          <div class="card__tags">
+            <span class="chip">Design</span>
+            <span class="chip">Offline</span>
+            <span class="chip">Workshop</span>
+            <span class="chip">Beginner</span>
+          </div>
+        </article>
+
+        <!-- Card 4 -->
+        <article class="card">
+          <div class="card__media">
+            <img class="card__photo" src="Assets/Event Card Image.png" alt=""
+                 width="360" height="300" />
+            <div class="card__scrim paint-blur">
+              <p class="card__event-title">Catalyst Founders Meetup</p>
+              <p class="card__organizer">by Catalyst IEDC</p>
+            </div>
+            <!-- Absolute inside the 360x300 media frame at Figma X 312 / Y 14. -->
+            <button class="like-btn" type="button" aria-pressed="false" aria-label="Save Catalyst Founders Meetup">
+              <!-- Untitled UI `heart`, exported vector. 20x20 frame; the glyph is
+                   16.67 x 14.86 and the translate seats it at x=1.67 y=2.5 per the
+                   icon spec. Inlined rather than masked because the Liked state
+                   hides the stroke and fills the shape instead. -->
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <g transform="translate(0.6667 1.5)">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
+                </g>
+              </svg>
+            </button>
+          </div>
+          <div class="card__details">
+            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">13th Sept 2026</span></div>
+            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">6:00 PM</span></div>
+            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">₹99</span></div>
+          </div>
+          <div class="card__tags">
+            <span class="chip">Networking</span>
+            <span class="chip">Offline</span>
+            <span class="chip">Startup</span>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Chevron Button (Navigation) — Enabled / Disabled -->
+      <button class="chev chev--prev" type="button" aria-controls="more-events-track"
+              aria-label="Previous events">
+        <span class="chev__icon icon-mask" aria-hidden="true"></span>
+      </button>
+      <button class="chev chev--next" type="button" aria-controls="more-events-track"
+              aria-label="Next events">
+        <span class="chev__icon icon-mask" aria-hidden="true"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== Footer (Web variant) ===== -->
+  <footer class="footer paint-footer-bg">
+    <div class="footer__columns">
+      <nav class="footer__links" aria-label="Footer left">
+        <a class="footer__link" href="index.html">Events</a>
+        <a class="footer__link" href="organizations.html">Organizations</a>
+      </nav>
+
+      <div class="footer__social">
+        <p class="footer__social-heading">Social Media</p>
+        <a class="social-chip" href="#" aria-label="eventundo on Instagram">
+          <span class="social-chip__icon icon-mask" aria-hidden="true"></span>
+        </a>
+      </div>
+
+      <nav class="footer__links footer__links--end" aria-label="Footer right">
+        <a class="footer__link" href="team.html">The Team</a>
+        <a class="footer__link" href="profile.html">Profile</a>
+      </nav>
+    </div>
+
+    <p class="footer__mark" aria-hidden="true">eventundo</p>
+  </footer>
+
+</div>
+
+<script>
+  // Like button: Default ↔ Liked
+  document.querySelectorAll('.like-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var liked = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', String(!liked));
+    });
+  });
+
+  // RSVP: the CTA is disabled until Yes or No is picked.
+  (function () {
+    var cta = document.querySelector('.btn-cta');
+    document.querySelectorAll('input[name="rsvp"]').forEach(function (input) {
+      input.addEventListener('change', function () { cta.disabled = false; });
+    });
+  })();
+
+  // More Events carousel: page by one card, and switch the chevrons to their
+  // Disabled variant at each end of the track.
+  (function () {
+    var track = document.getElementById('more-events-track');
+    var prev = document.querySelector('.chev--prev');
+    var next = document.querySelector('.chev--next');
+    if (!track) return;
+
+    function step() {
+      var card = track.querySelector('.card');
+      if (!card) return track.clientWidth;
+      // One card plus the row gap.
+      return card.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0);
+    }
+
+    // Chevrons switch to their Disabled variant at each end of the track.
+    function setFlags(pos) {
+      var max = track.scrollWidth - track.clientWidth;
+      prev.disabled = pos <= 1;
+      next.disabled = pos >= max - 1;
+    }
+
+    // Paged off the destination rather than off a scroll event, so the buttons
+    // are right the moment they're pressed instead of a frame later.
+    // No `behavior` option: the track's own scroll-behavior decides, so the
+    // reduced-motion override in CSS is respected.
+    function page(direction) {
+      var max = track.scrollWidth - track.clientWidth;
+      var target = Math.max(0, Math.min(max, track.scrollLeft + direction * step()));
+      track.scrollTo({ left: target });
+      setFlags(target);
+    }
+
+    prev.addEventListener('click', function () { page(-1); });
+    next.addEventListener('click', function () { page(1); });
+    // Keeps the chevrons honest for wheel / touch / keyboard scrolling too.
+    track.addEventListener('scroll', function () { setFlags(track.scrollLeft); });
+    window.addEventListener('resize', function () { setFlags(track.scrollLeft); });
+    setFlags(0);
+  })();
+
+  // Mobile menu: hamburger ↔ x-close, same behaviour as the other pages.
+  (function () {
+    var toggle = document.querySelector('.navbar-btn');
+    var menu = document.getElementById('mobile-menu');
+    var bar = document.querySelector('.detail-head__bar');
+    if (!toggle || !menu || !bar) return;
+
+    function setOpen(open) {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      menu.hidden = !open;
+      // Drops the navbar's pill and lifts it above the overlay.
+      bar.toggleAttribute('data-menu-open', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+    }
+
+    toggle.addEventListener('click', function () {
+      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') setOpen(false);
+    });
+  })();
+</script>
+
+</body>
+</html>
