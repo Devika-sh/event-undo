@@ -1,0 +1,200 @@
+/* ==========================================================================
+   EventUndo — Design Tokens
+   Mirrors the "EU Design System" Figma library. Single mode (light) only.
+   Layering: primitives  →  semantic  →  components consume semantic.
+   Do NOT add values that don't exist in the library.
+   ========================================================================== */
+
+:root {
+  /* ---------- 1. PRIMITIVES ---------------------------------------------- */
+
+  /* 1.1 Brand — orange */
+  --colour-orange-50:  #FFEDE6;
+  --colour-orange-100: #FFCCB8;
+  --colour-orange-200: #FFAB8A;
+  --colour-orange-300: #FF8A5C;
+  --colour-orange-400: #FF5F1F;
+  --colour-orange-500: #FF4800;  /* primary brand */
+  --colour-orange-600: #D13B00;
+  --colour-orange-700: #A32E00;
+  --colour-orange-800: #752100;
+  --colour-orange-900: #471400;
+  --colour-orange-950: #1A0700;
+
+  /* 1.2 Neutral — gray (light-biased ramp) */
+  --colour-gray-50:  #FEFEFE;
+  --colour-gray-100: #FDFDFD;
+  --colour-gray-200: #FCFCFC;
+  --colour-gray-300: #FAFAFA;
+  --colour-gray-400: #F9F9F9;
+  --colour-gray-500: #F8F8F8;
+  --colour-gray-600: #CFCFCF;
+  --colour-gray-700: #A5A5A5;
+  --colour-gray-800: #7C7C7C;
+  --colour-gray-900: #535353;
+  --colour-gray-950: #323232;
+
+  /* 1.3 Base */
+  --colour-base-white: #FFFFFF;
+  --colour-base-black: #000000;
+
+  /* 1.4 Alpha (#4E4E4E at opacity) — overlays, scrims */
+  --colour-alpha-0:   rgba(78, 78, 78, 0);
+  --colour-alpha-10:  rgba(78, 78, 78, 0.1);
+  --colour-alpha-20:  rgba(78, 78, 78, 0.2);
+  --colour-alpha-30:  rgba(78, 78, 78, 0.3);
+  --colour-alpha-40:  rgba(78, 78, 78, 0.4);
+  --colour-alpha-50:  rgba(78, 78, 78, 0.5);
+  --colour-alpha-60:  rgba(78, 78, 78, 0.6);
+  --colour-alpha-70:  rgba(78, 78, 78, 0.7);
+  --colour-alpha-80:  rgba(78, 78, 78, 0.8);
+  --colour-alpha-90:  rgba(78, 78, 78, 0.9);
+  --colour-alpha-100: rgba(78, 78, 78, 1);
+
+  /* 1.5 Font primitives — heading and body share one family */
+  --font-family-heading: "Google Sans Flex", "Google Sans", "Product Sans",
+                         system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-family-body:    "Google Sans Flex", "Google Sans", "Product Sans",
+                         system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* ---------- 2. SEMANTIC (color modes) ---------------------------------- */
+
+  /* 2.1 Text */
+  --text-primary:   var(--colour-base-black);
+  --text-secondary: var(--colour-gray-800);
+  --text-tertiary:  var(--colour-gray-700);
+  --text-label:     var(--colour-gray-50);
+  --text-white:     var(--colour-base-white);
+  --text-brand:     var(--colour-orange-500);
+
+  /* 2.2 Background */
+  --bg-primary:       var(--colour-gray-400);
+  --bg-white:         var(--colour-base-white);
+  --bg-brand:         var(--colour-orange-500);
+  --bg-hover:         var(--colour-orange-50);
+  --bg-inactive:      var(--colour-gray-100);
+  --bg-footer-top:    var(--colour-orange-500);
+  --bg-footer-bottom: var(--colour-orange-300);
+  --bg-blur-top:      var(--colour-alpha-0);
+  --bg-blur-bottom:   var(--colour-alpha-90);
+
+  /* 2.3 Border */
+  --border-brand:    var(--colour-orange-500);
+  --border-inactive: var(--colour-gray-800);
+  --border-active:   var(--colour-orange-50);
+
+  /* 2.4 Icon */
+  --icon-black:    var(--colour-base-black);
+  --icon-white:    var(--colour-base-white);
+  --icon-brand:    var(--colour-orange-500);
+  --icon-inactive: var(--colour-gray-700);
+
+  /* ---------- 3. TYPOGRAPHY ---------------------------------------------- */
+
+  /* 3.1 Font size — body */
+  --font-size-body-3xs: 10px;
+  --font-size-body-2xs: 12px;
+  --font-size-body-xs:  14px;
+  --font-size-body-sm:  16px;
+  --font-size-body-md:  18px;
+  --font-size-body-lg:  20px;
+  --font-size-body-xl:  32px;
+  --font-size-body-2xl: 64px;
+  --font-size-body-3xl: 96px;
+
+  /* 3.2 Font size — heading */
+  --font-size-heading-h1: 60px;
+  --font-size-heading-h2: 48px;
+  --font-size-heading-h3: 40px;
+  --font-size-heading-h4: 32px;
+  --font-size-heading-h5: 24px;
+  --font-size-heading-h6: 20px;
+
+  /* 3.3 Line height */
+  --line-height-body-sm: 20px;
+  --line-height-body-md: 24px;
+  --line-height-body-lg: 32px;
+  --line-height-heading-h1: 72px;
+  --line-height-heading-h2: 56px;
+  --line-height-heading-h3: 48px;
+  --line-height-heading-h4: 40px;
+  --line-height-heading-h5: 28px;
+  --line-height-heading-h6: 24px;
+
+  /* 3.5 Spacing scale (positive = layout gap/padding, negative = letter-spacing) */
+  --space-4xs: -4px;
+  --space-3xs: -2px;
+  --space-2xs: -1px;
+  --space-none: 0px;
+  --space-xs:  2px;
+  --space-sm:  4px;
+  --space-md:  8px;
+  --space-lg:  12px;
+  --space-xl:  16px;
+  --space-2xl: 20px;
+  --space-3xl: 24px;
+  --space-4xl: 48px;
+  --space-5xl: 80px;
+  --space-6xl: 160px;
+
+  /* ---------- 4. BORDER --------------------------------------------------- */
+
+  /* 4.1 Radius */
+  --radius-none: 0px;
+  --radius-2xs:  2px;
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  32px;
+  --radius-3xl:  48px;
+  --radius-full: 9999px;
+
+  /* 4.2 Stroke width */
+  --width-none: 0px;
+  --width-sm:   0.5px;
+  --width-md:   0.8px;
+  --width-lg:   1px;
+  --width-xl:   2px;
+  --width-2xl:  3px;
+}
+
+/* ---------- 5. TEXT STYLES (type ramp) ------------------------------------ */
+/* Display = headings / large display. Body = copy. Line height auto unless noted. */
+
+.display-2xl { font-size: 96px; line-height: 1;    font-family: var(--font-family-heading); }
+.display-xl  { font-size: 64px; line-height: 1;    font-family: var(--font-family-heading); }
+.display-l   { font-size: 48px; line-height: 1.1;  font-family: var(--font-family-heading); }
+.display-m   { font-size: 32px; line-height: 1.15; font-family: var(--font-family-heading); }
+.display-s   { font-size: 20px; line-height: 1.2;  font-family: var(--font-family-heading); }
+
+.body-2xl { font-size: 18px; font-family: var(--font-family-body); }
+.body-xl  { font-size: 16px; font-family: var(--font-family-body); }
+.body-l   { font-size: 14px; font-family: var(--font-family-body); }
+.body-m   { font-size: 12px; font-family: var(--font-family-body); }
+.body-s   { font-size: 10px; font-family: var(--font-family-body); }
+
+.w-regular  { font-weight: var(--font-weight-regular); }
+.w-medium   { font-weight: var(--font-weight-medium); }
+.w-semibold { font-weight: var(--font-weight-semibold); }
+.w-bold     { font-weight: var(--font-weight-bold); }
+
+/* ---------- 6. PAINT / GRADIENT STYLES ------------------------------------ */
+
+.paint-footer-bg {
+  background: linear-gradient(180deg, var(--bg-footer-top) 0%, var(--bg-footer-bottom) 100%);
+}
+.paint-blur {
+  background: linear-gradient(180deg, var(--bg-blur-top) 0%, var(--bg-blur-bottom) 100%);
+}
+.paint-logo-color {
+  background: linear-gradient(180deg, var(--colour-orange-500) 0%, var(--colour-orange-400) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
