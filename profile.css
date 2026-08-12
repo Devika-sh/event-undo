@@ -81,7 +81,11 @@
     max-width: 1440px;
     margin-inline: auto;
     padding-inline: var(--space-5xl);
-    z-index: 3;
+    /* Above every page's z-indexed content — the carousel's chevrons (.chev,
+       z-index 5) and fanned cards (up to 4) below are the highest on this
+       page, and neither creates a stacking context that would contain them,
+       so a lower z-index here let them paint over the pinned nav. */
+    z-index: 20;
   }
 }
 

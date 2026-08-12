@@ -128,7 +128,10 @@ img { display: block; max-width: 100%; }
 /* Soft page-background fade behind the pinned header, so content scrolling
    underneath it eases out instead of cutting off sharply. Hidden at rest;
    fades in once the page picks up body.is-scrolled (see the shared scroll
-   listener in each page's script). */
+   listener in each page's script). z-index sits between ordinary page
+   content (nothing above 5 — the Profile page's carousel chevrons are the
+   highest) and the pinned nav itself (20, below), so it never gets buried
+   under scrolling content the way the un-pinned nav briefly did. */
 .scroll-shade {
   position: fixed;
   top: 0;
@@ -136,7 +139,7 @@ img { display: block; max-width: 100%; }
   right: 0;
   height: 128px;
   background: linear-gradient(to bottom, var(--bg-primary) 0%, var(--bg-primary) 40%, transparent 100%);
-  z-index: 2;
+  z-index: 15;
   opacity: 0;
   pointer-events: none;
   transition: opacity 320ms ease;
@@ -173,7 +176,10 @@ body.is-scrolled .scroll-shade { opacity: 1; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3;
+  /* Above every other page's z-indexed content (the Profile carousel's
+     chevrons, at 5, are the highest) — otherwise a pinned nav with a lower
+     z-index can end up buried under scrolling content instead of above it. */
+  z-index: 20;
 }
 
 /* Desktop: the nav pill stays pinned to the viewport while the page scrolls,
@@ -221,6 +227,17 @@ body.is-scrolled .scroll-shade { opacity: 1; }
   border: var(--width-lg) solid var(--border-inactive); /* flagged: Figma binds text/text-secondary */
   border-radius: var(--radius-3xl);
   padding: var(--space-lg) var(--space-4xl);
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  transition: box-shadow 320ms ease;
+}
+
+/* Small lift once the page scrolls — no shadow token exists in the design
+   system (the footer spec explicitly says "no shadows"), so this stays a
+   deliberately light, raw rgba rather than a bound token. Applied to the
+   pill itself (not the invisible bar/wrap around it) so it reads as the
+   nav lifting off the page, not a box floating behind it. */
+body.is-scrolled .navbar {
+  box-shadow: 0 var(--space-xs) var(--space-lg) 0 rgba(0, 0, 0, 0.1);
 }
 
 .navbar__link {

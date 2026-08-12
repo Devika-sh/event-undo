@@ -78,7 +78,9 @@
     max-width: 1440px;
     margin-inline: auto;
     padding-inline: var(--space-5xl);
-    z-index: 3;
+    /* Above every page's z-indexed content (Profile's carousel chevrons, at
+       5, are the highest) — see styles.css .navbar-wrap for the full note. */
+    z-index: 20;
   }
 }
 
