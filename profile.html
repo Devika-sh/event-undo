@@ -22,6 +22,9 @@
   <span class="page-loader__spinner"></span>
 </div>
 
+<!-- ===== Scroll shade: soft fade behind the pinned header ===== -->
+<div class="scroll-shade" aria-hidden="true"></div>
+
 <div class="page profile-page">
 
   <!-- ===== Masthead: faint wordmark artwork with the header row and page
@@ -37,6 +40,9 @@
       <img class="profile-head__mark" src="Assets/Detail Masthead.png" alt=""
            width="1280" height="564" />
     </picture>
+
+    <!-- Reserves the pinned bar's own height in flow (desktop) — see .head-bar-spacer -->
+    <div class="head-bar-spacer" aria-hidden="true"></div>
 
     <div class="profile-head__bar">
       <a class="profile-head__brand" href="index.html" aria-label="eventundo — home">
@@ -283,6 +289,24 @@
     }
     if (document.readyState === 'complete') reveal();
     else window.addEventListener('load', reveal);
+  })();
+
+  // Scroll state: drives the header's scroll-shade gradient. rAF-throttled
+  // so it never fights the scroll itself. Shared verbatim across every page.
+  (function () {
+    var threshold = 80;
+    var ticking = false;
+    function update() {
+      document.body.classList.toggle('is-scrolled', window.scrollY > threshold);
+      ticking = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    }, { passive: true });
+    update();
   })();
 
   // Filter chips: Default → On Click (selected) → Default

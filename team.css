@@ -51,10 +51,12 @@
   pointer-events: none;
 }
 
-/* Lift the head's own content above the negative-z mark. The mobile nav wrap is
-   excluded: it owns its positioning in both states (static in flow when closed,
-   fixed for the open-menu takeover), and this rule would outrank both. */
-.team-head > *:not(.team-head__mark):not(.navbar-wrap) {
+/* Lift the head's own content above the negative-z mark. The mobile nav wrap
+   and the bar are both excluded: each owns its positioning outright (the
+   mobile nav wrap is static in flow when closed, fixed for the open-menu
+   takeover; the bar is fixed on desktop, hidden entirely on mobile — see
+   below), and this rule would outrank either. */
+.team-head > *:not(.team-head__mark):not(.navbar-wrap):not(.team-head__bar) {
   position: relative;
   z-index: 1;
 }
@@ -65,6 +67,23 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
+}
+
+/* Pinned header (desktop): same top offset and horizontal bounds as every
+   other page's bar and Discover's `.navbar-wrap`, so the navbar sits in one
+   consistent place site-wide while scrolling. Hidden on mobile (below),
+   where this rule never applies anyway. */
+@media (min-width: 721px) {
+  .team-head__bar {
+    position: fixed;
+    top: var(--space-4xl);
+    left: 0;
+    right: 0;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--space-5xl);
+    z-index: 3;
+  }
 }
 
 /* Wordmark carries the Logo color gradient inside the SVG. */

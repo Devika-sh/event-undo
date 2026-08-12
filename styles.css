@@ -101,6 +101,54 @@ img { display: block; max-width: 100%; }
 }
 
 /* ==========================================================================
+   Site Header — consistent pinned placement across every page
+   Discover's own hero nav (`.navbar-wrap`) already pins itself (see below).
+   The other four pages each carry an identical logo+nav row —
+   `.team-head__bar`, `.org-head__bar`, `.profile-head__bar`,
+   `.detail-head__bar` — that used to just scroll away with the page. Each
+   page pins its own bar to this same top offset and horizontal bounds (see
+   the "Pinned header" rule added near the bottom of that page's own
+   stylesheet — it has to live there, after that page's existing
+   position:relative rule for the header row, to win the cascade cleanly
+   rather than fight its specificity from here).
+   `.head-bar-spacer` reserves the bar's own height in normal flow (desktop
+   only) so lifting it out to `position: fixed` doesn't collapse the page
+   title upward into where the bar used to be.
+   ========================================================================== */
+
+.head-bar-spacer { display: none; }
+
+@media (min-width: 721px) {
+  .head-bar-spacer {
+    display: block;
+    height: 62px; /* measured .navbar pill height (padding + border + line-height) */
+  }
+}
+
+/* Soft page-background fade behind the pinned header, so content scrolling
+   underneath it eases out instead of cutting off sharply. Hidden at rest;
+   fades in once the page picks up body.is-scrolled (see the shared scroll
+   listener in each page's script). */
+.scroll-shade {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 128px;
+  background: linear-gradient(to bottom, var(--bg-primary) 0%, var(--bg-primary) 40%, transparent 100%);
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+
+body.is-scrolled .scroll-shade { opacity: 1; }
+
+@media (max-width: 720px) {
+  .scroll-shade { display: none; }
+}
+
+/* ==========================================================================
    Navbar (Desktop) — active section: Discover
    Pill bar, orange highlight pill sized to the active label.
    ========================================================================== */
@@ -136,8 +184,8 @@ img { display: block; max-width: 100%; }
 }
 
 /* Hidden at rest — the hero picture already carries the wordmark. Revealed
-   next to the pinned nav once .masthead picks up .is-scrolled (see the
-   scroll listener in index.html), sliding in from the left.
+   next to the pinned nav once body picks up .is-scrolled (see the shared
+   scroll listener in each page's script), sliding in from the left.
    Only shown from 1300px up: the nav pill's own link spacing already runs
    ~850px wide, so below that there isn't reliably clear room beside it for
    the logo without the two crowding or overlapping. */
@@ -158,7 +206,7 @@ img { display: block; max-width: 100%; }
                 transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
 
-  .masthead.is-scrolled .masthead__logo {
+  body.is-scrolled .masthead__logo {
     opacity: 1;
     transform: translateY(-50%) translateX(0);
     pointer-events: auto;

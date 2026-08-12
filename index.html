@@ -19,6 +19,9 @@
   <span class="page-loader__spinner"></span>
 </div>
 
+<!-- ===== Scroll shade: soft fade behind the pinned header ===== -->
+<div class="scroll-shade" aria-hidden="true"></div>
+
 <div class="page">
 
   <!-- ===== Masthead: wordmark lockup with the navbar floating over it ===== -->
@@ -435,15 +438,14 @@
     else window.addEventListener('load', reveal);
   })();
 
-  // Fly-in logo: reveal it beside the now-pinned desktop nav once the hero
-  // has scrolled past, rAF-throttled so it never fights the scroll itself.
+  // Scroll state: drives the fly-in logo and the header's scroll-shade
+  // gradient. rAF-throttled so it never fights the scroll itself. Shared
+  // verbatim across every page's script.
   (function () {
-    var masthead = document.querySelector('.masthead');
-    if (!masthead) return;
     var threshold = 80;
     var ticking = false;
     function update() {
-      masthead.classList.toggle('is-scrolled', window.scrollY > threshold);
+      document.body.classList.toggle('is-scrolled', window.scrollY > threshold);
       ticking = false;
     }
     window.addEventListener('scroll', function () {
