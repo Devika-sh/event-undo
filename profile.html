@@ -297,9 +297,9 @@
       </div>
     </div>
 
-    <!-- Upcoming Events — four Event Listing Cards fanned as a carousel. -->
-    <section class="events-panel" aria-label="Upcoming events">
-      <h2 class="events-panel__title">Upcoming Events</h2>
+    <!-- Favored Events — the user's saved Event Listing Cards fanned as a carousel. -->
+    <section class="events-panel" aria-label="Favored events">
+      <h2 class="events-panel__title">Favored Events</h2>
 
       <div class="events-fan">
 
@@ -524,20 +524,27 @@
     });
   })();
 
-  // Carousel paging on phone, where the fan becomes a one-card snap scroller.
+  // Carousel paging — one card-pitch per click, smooth-scrolled. On phone the
+  // fan is edge-to-edge cards (pitch = card width); on desktop the cards
+  // overlap in a fan (pitch = the 115px sliver between them). Measuring the
+  // gap between the first two cards instead of hardcoding either number lets
+  // one function cover both layouts, and any number of favourited events.
   (function () {
     var fan = document.querySelector('.events-fan');
     var prev = document.querySelector('.chev--prev');
     var next = document.querySelector('.chev--next');
     if (!fan || !prev || !next) return;
 
+    function pitch() {
+      var cards = fan.querySelectorAll('.card');
+      if (!cards.length) return 0;
+      if (cards.length === 1) return cards[0].getBoundingClientRect().width;
+      return cards[1].getBoundingClientRect().left - cards[0].getBoundingClientRect().left;
+    }
     function step(dir) {
-      var card = fan.querySelector('.card');
-      if (!card) return;
-      fan.scrollBy({ left: dir * (card.getBoundingClientRect().width + 24), behavior: 'smooth' });
+      fan.scrollBy({ left: dir * pitch(), behavior: 'smooth' });
     }
     function sync() {
-      // Only meaningful once the fan actually scrolls (phone layout).
       var max = fan.scrollWidth - fan.clientWidth;
       prev.disabled = max <= 1 || fan.scrollLeft <= 1;
       next.disabled = max <= 1 || fan.scrollLeft >= max - 1;
@@ -547,6 +554,8 @@
     next.addEventListener('click', function () { step(1); });
     fan.addEventListener('scroll', sync, { passive: true });
     window.addEventListener('resize', sync);
+    // Re-sync once public-data.js swaps in the real saved-event cards.
+    new MutationObserver(sync).observe(fan, { childList: true });
     sync();
   })();
 </script>

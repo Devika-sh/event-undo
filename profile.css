@@ -144,23 +144,46 @@
   color: var(--text-primary);
 }
 
-/* Fanned carousel — the Figma frame overlaps four 400-wide cards at 115px
-   intervals, leftmost fully visible and on top. */
+/* Fanned carousel — the Figma frame overlaps 400-wide cards at 115px
+   intervals, leftmost fully visible and on top. Built on a scrolling flex
+   row (not absolute offsets) so the chevrons can page through however many
+   favourited events there are, not just a fixed four. */
 .events-fan {
   position: relative;
   height: 385px;
   margin-top: var(--space-4xl);
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.events-fan::-webkit-scrollbar { display: none; }
 
 .events-fan .card {
-  position: absolute;
-  top: 0;
+  position: relative;
+  flex: 0 0 400px;
   width: 400px;
+  scroll-snap-align: start;
 }
-.events-fan .card:nth-child(1) { left: 0;     z-index: 4; }
-.events-fan .card:nth-child(2) { left: 115px; z-index: 3; }
-.events-fan .card:nth-child(3) { left: 230px; z-index: 2; }
-.events-fan .card:nth-child(4) { left: 345px; z-index: 1; }
+
+/* Every card after the first tucks under the one before it, leaving the
+   same 115px sliver the static frame drew. */
+.events-fan .card + .card { margin-left: -285px; }
+
+.events-fan .card:nth-child(1) { z-index: 8; }
+.events-fan .card:nth-child(2) { z-index: 7; }
+.events-fan .card:nth-child(3) { z-index: 6; }
+.events-fan .card:nth-child(4) { z-index: 5; }
+.events-fan .card:nth-child(5) { z-index: 4; }
+.events-fan .card:nth-child(6) { z-index: 3; }
+.events-fan .card:nth-child(7) { z-index: 2; }
+.events-fan .card:nth-child(8) { z-index: 1; }
+
+/* This panel shows saved events as a quick-glance fan, not a filterable
+   grid — the category chips belong on Discover, not repeated here. */
+.events-fan .card__tags { display: none; }
 
 /* ==========================================================================
    Chevron Button (Navigation) — 54x54, paging the fan.
@@ -170,7 +193,7 @@
 .chev {
   position: absolute;
   top: 344px;
-  z-index: 5;
+  z-index: 9;   /* above every fanned card, including the leftmost's z-index: 8 */
   width: 54px;
   height: 54px;
   display: grid;
@@ -324,6 +347,8 @@
     max-width: none;
     scroll-snap-align: center;
   }
+  /* The desktop fan's overlap comes from the gap above instead. */
+  .events-fan .card + .card { margin-left: 0; }
 
   /* Chevrons sit on the card's vertical centre and overhang its edges by 3px
      (frame x=11 and 363 against a card at x=14). Offset is the 40-tall heading
