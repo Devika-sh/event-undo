@@ -70,7 +70,7 @@
       <button class="a-nav__link" type="button" data-view="activity" data-admin-only>
         <span class="a-nav__icon a-nav__icon--activity" aria-hidden="true"></span> Activity
       </button>
-      <button class="a-nav__link" type="button" data-view="settings" data-admin-only>
+      <button class="a-nav__link" type="button" data-view="settings">
         <span class="a-nav__icon a-nav__icon--settings" aria-hidden="true"></span> Settings
       </button>
       <a class="a-nav__link" href="index.html" target="_blank" rel="noopener">
@@ -330,18 +330,60 @@
                   <label class="a-field__label" for="acc-name">Full name</label>
                   <input class="a-input" id="acc-name" type="text" />
                 </div>
-                <div class="a-field">
-                  <label class="a-field__label" for="acc-email">Email</label>
-                  <input class="a-input" id="acc-email" type="email" disabled />
-                  <span class="a-field__hint">Changing the sign-in email is done in Supabase Auth.</span>
+                <div class="a-form__row">
+                  <div class="a-field">
+                    <label class="a-field__label" for="acc-email">Email</label>
+                    <input class="a-input" id="acc-email" type="email" disabled />
+                    <span class="a-field__hint">Changing the sign-in email is done in Supabase Auth.</span>
+                  </div>
+                  <div class="a-field">
+                    <label class="a-field__label" for="acc-phone">Phone</label>
+                    <input class="a-input" id="acc-phone" type="tel" />
+                  </div>
+                </div>
+                <div class="a-form__row">
+                  <div class="a-field">
+                    <label class="a-field__label" for="acc-department">Department</label>
+                    <input class="a-input" id="acc-department" type="text" placeholder="Computer Science" />
+                  </div>
+                  <div class="a-field">
+                    <label class="a-field__label" for="acc-semester">Semester</label>
+                    <select class="a-select" id="acc-semester">
+                      <option value="">Not set</option>
+                      <option value="1">Semester 1</option>
+                      <option value="2">Semester 2</option>
+                      <option value="3">Semester 3</option>
+                      <option value="4">Semester 4</option>
+                      <option value="5">Semester 5</option>
+                      <option value="6">Semester 6</option>
+                      <option value="7">Semester 7</option>
+                      <option value="8">Semester 8</option>
+                    </select>
+                  </div>
                 </div>
                 <div class="a-field">
-                  <label class="a-field__label" for="acc-phone">Phone</label>
-                  <input class="a-input" id="acc-phone" type="tel" />
+                  <label class="a-field__label" for="acc-org">Favourite organisation</label>
+                  <select class="a-select" id="acc-org"><option value="">None</option></select>
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="acc-photo">Profile photo</label>
+                  <div class="a-dropzone" data-dropzone data-input-id="acc-photo" data-accept="image/*"
+                       data-hint="JPEG or PNG, up to 5MB"></div>
+                  <span class="a-field__hint">Square images look best.</span>
                 </div>
                 <div class="a-field">
                   <label class="a-field__label" for="acc-bio">Bio</label>
                   <textarea class="a-textarea" id="acc-bio"></textarea>
+                </div>
+                <div class="a-form__row">
+                  <div class="a-field">
+                    <label class="a-field__label" for="acc-instagram">Instagram</label>
+                    <input class="a-input" id="acc-instagram" type="url" placeholder="https://instagram.com/…" />
+                  </div>
+                  <div class="a-field">
+                    <label class="a-field__label" for="acc-linkedin">LinkedIn</label>
+                    <input class="a-input" id="acc-linkedin" type="url" placeholder="https://linkedin.com/in/…" />
+                  </div>
                 </div>
                 <div>
                   <button class="a-btn" type="submit">Save profile</button>

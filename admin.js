@@ -14,7 +14,7 @@ import {
   signOut, logActivity, formatDate, formatTime, formatFee, formatShort,
   slugify, esc, initials
 } from './supabase-client.js';
-import { initDropzones } from './dropzone.js';
+import { initDropzones, resetDropzone } from './dropzone.js';
 // Side-effect only: wires every .a-select into the custom dropdown once it's
 // in the DOM, including selects inside modals rendered later. See dropdown.js.
 import './dropdown.js';
@@ -231,6 +231,7 @@ async function boot() {
   $('#admin').hidden = false;
 
   await loadReferenceData();
+  initDropzones(document);   // static zones outside any modal — just Settings' photo field
   wireChrome();
   route();
 }
@@ -326,7 +327,7 @@ const LOADERS = {
 // Volunteers only add/edit organisations and events — everything else in
 // the console (overview, categories, people, registrations, activity,
 // settings) is admin-only.
-const VOLUNTEER_VIEWS = ['events', 'organizations'];
+const VOLUNTEER_VIEWS = ['events', 'organizations', 'settings'];
 
 function route() {
   let name = location.hash.replace('#', '') || 'overview';
@@ -1764,12 +1765,23 @@ async function loadActivity() {
    12. Settings
    ========================================================================== */
 
+/** Same fields the public profile edit pop-up manages (profile.html's
+ *  #profile-edit form) — admins and volunteers get the identical option here
+ *  instead of having to visit the public site to fill in their own details,
+ *  and either surface always shows the latest since it's the same row. */
 async function loadSettings() {
   const { me } = store;
   $('#acc-name').value = me.full_name || '';
   $('#acc-email').value = me.email || '';
   $('#acc-phone').value = me.phone || '';
+  $('#acc-department').value = me.department || '';
+  $('#acc-semester').value = me.semester || '';
   $('#acc-bio').value = me.bio || '';
+  $('#acc-instagram').value = me.instagram_url || '';
+  $('#acc-linkedin').value = me.linkedin_url || '';
+
+  $('#acc-org').innerHTML = '<option value="">None</option>' +
+    store.orgs.map((o) => `<option value="${esc(o.id)}"${me.favorite_organization_id === o.id ? ' selected' : ''}>${esc(o.name)}</option>`).join('');
 
   if (!isAdmin(me)) return;
 
@@ -1786,16 +1798,34 @@ async function loadSettings() {
 async function saveAccount(e) {
   e.preventDefault();
   setError('account-error', '');
+  const btn = $('#account-form button[type="submit"]');
+  btn.disabled = true;
+
   const payload = {
     full_name: $('#acc-name').value.trim() || null,
     phone: $('#acc-phone').value.trim() || null,
-    bio: $('#acc-bio').value.trim() || null
+    department: $('#acc-department').value.trim() || null,
+    semester: $('#acc-semester').value || null,
+    favorite_organization_id: $('#acc-org').value || null,
+    bio: $('#acc-bio').value.trim() || null,
+    instagram_url: $('#acc-instagram').value.trim() || null,
+    linkedin_url: $('#acc-linkedin').value.trim() || null
   };
+
+  const file = $('#acc-photo').files[0];
+  if (file) {
+    const uploaded = await uploadMedia(file, 'avatars');
+    if (!uploaded) { btn.disabled = false; return; }
+    payload.avatar_url = uploaded;
+  }
+
   const { error } = await supabase.from('profiles').update(payload).eq('id', store.me.id);
+  btn.disabled = false;
   if (error) { setError('account-error', error.message); return; }
 
   Object.assign(store.me, payload);
   paintIdentity();
+  resetDropzone($('#acc-photo'));
   toast('Profile saved', 'success');
 }
 

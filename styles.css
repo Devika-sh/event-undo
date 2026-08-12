@@ -1356,6 +1356,25 @@ body.is-scrolled .navbar {
 
 .eu-signout:hover { border-color: var(--border-brand); color: var(--text-brand); }
 
+/* Admins/volunteers only — a one-click switch from the public profile card
+   into the console they manage events from. */
+.eu-admin-link {
+  display: block;
+  margin-top: var(--space-2xl);
+  padding: var(--space-md) var(--space-3xl);
+  border-radius: var(--radius-full);
+  background: var(--bg-brand);
+  color: var(--text-white);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-body-2xs);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.eu-admin-link:hover { background: var(--colour-orange-600); }
+
 /* ==========================================================================
    FORM KIT
    Labelled inputs, selects, textareas and the pill button. Shared: the admin

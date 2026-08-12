@@ -11,7 +11,7 @@
    ========================================================================== */
 
 import {
-  supabase, isConfigured, getSession,
+  supabase, isConfigured, getSession, isStaff,
   formatDate, formatTime, formatFee, esc, initials, timingOf
 } from './supabase-client.js';
 import { initDropzones, resetDropzone } from './dropzone.js';
@@ -630,7 +630,20 @@ async function hydrateProfile() {
       Nothing saved yet — tap the heart on an event to keep it here.</p>`;
   }
 
+  addAdminLink(profile.data);
   addSignOut();
+}
+
+/** Admins and volunteers get a one-click way back into the console they
+ *  manage events from — regular users never see it. */
+function addAdminLink(profile) {
+  const card = document.querySelector('.profile-card');
+  if (!card || !isStaff(profile) || card.querySelector('.eu-admin-link')) return;
+  const link = document.createElement('a');
+  link.className = 'eu-admin-link';
+  link.href = 'admin.html';
+  link.textContent = 'Go to Admin Dashboard';
+  card.append(link);
 }
 
 function addSignOut() {
