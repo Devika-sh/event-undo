@@ -12,8 +12,8 @@
    *service_role* key here.
    ========================================================================== */
 
-export const SUPABASE_URL      = 'https://YOUR-PROJECT-REF.supabase.co';
-export const SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+export const SUPABASE_URL      = 'https://mrfryhrybznxkyftgqsm.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yZnJ5aHJ5YnpueGt5ZnRncXNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzcyNjksImV4cCI6MjEwMjAxMzI2OX0.sg2IgEdJ6fIAOVvL1TJlx8p5jOE_18NOQfr-gNdM_Lg';
 
 /** False until the placeholders above are replaced. Public pages use this to
  *  fall back to their built-in static content instead of erroring. */
