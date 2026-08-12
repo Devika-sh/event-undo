@@ -17,6 +17,11 @@
 </head>
 <body>
 
+<!-- ===== Page Loader (splash screen) ===== -->
+<div class="page-loader" id="page-loader" aria-hidden="true">
+  <span class="page-loader__spinner"></span>
+</div>
+
 <div class="page detail-page">
 
   <!-- ===== Masthead: faint wordmark artwork with the header row + cover banner over it ===== -->
@@ -370,6 +375,21 @@
 </div>
 
 <script>
+  // Page Loader: shown at once, hidden once the page (and its images) are
+  // ready. A small minimum hold keeps it from just flashing on fast loads.
+  (function () {
+    var loader = document.getElementById('page-loader');
+    if (!loader) return;
+    var start = Date.now();
+    var MIN_MS = 400;
+    function reveal() {
+      var wait = Math.max(0, MIN_MS - (Date.now() - start));
+      setTimeout(function () { loader.setAttribute('data-hidden', ''); }, wait);
+    }
+    if (document.readyState === 'complete') reveal();
+    else window.addEventListener('load', reveal);
+  })();
+
   // Like button: Default ↔ Liked
   document.querySelectorAll('.like-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {

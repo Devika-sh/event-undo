@@ -14,6 +14,11 @@
 </head>
 <body>
 
+<!-- ===== Page Loader (splash screen) ===== -->
+<div class="page-loader" id="page-loader" aria-hidden="true">
+  <span class="page-loader__spinner"></span>
+</div>
+
 <div class="page">
 
   <!-- ===== Masthead: wordmark lockup with the navbar floating over it ===== -->
@@ -31,6 +36,12 @@
     </picture>
 
     <div class="navbar-wrap">
+      <!-- Fly-in logo: hidden at rest, revealed to the left of the pinned
+           desktop pill once the page scrolls (see .masthead.is-scrolled). -->
+      <a class="masthead__logo" href="index.html" aria-label="eventundo — home" aria-hidden="true" tabindex="-1">
+        <img src="Assets/eventundo-logo.svg" alt="" width="151" height="25" />
+      </a>
+
       <!-- Navbar (Desktop) — active: Discover -->
       <nav class="navbar" aria-label="Primary">
         <a class="navbar__link navbar__link--active" href="#" aria-current="page">Discover</a>
@@ -409,6 +420,41 @@
 </div>
 
 <script>
+  // Page Loader: shown at once, hidden once the page (and its images) are
+  // ready. A small minimum hold keeps it from just flashing on fast loads.
+  (function () {
+    var loader = document.getElementById('page-loader');
+    if (!loader) return;
+    var start = Date.now();
+    var MIN_MS = 400;
+    function reveal() {
+      var wait = Math.max(0, MIN_MS - (Date.now() - start));
+      setTimeout(function () { loader.setAttribute('data-hidden', ''); }, wait);
+    }
+    if (document.readyState === 'complete') reveal();
+    else window.addEventListener('load', reveal);
+  })();
+
+  // Fly-in logo: reveal it beside the now-pinned desktop nav once the hero
+  // has scrolled past, rAF-throttled so it never fights the scroll itself.
+  (function () {
+    var masthead = document.querySelector('.masthead');
+    if (!masthead) return;
+    var threshold = 80;
+    var ticking = false;
+    function update() {
+      masthead.classList.toggle('is-scrolled', window.scrollY > threshold);
+      ticking = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    }, { passive: true });
+    update();
+  })();
+
   // Filter chips: Default → On Click (selected) → Default
   document.querySelectorAll('.filters__set .chip').forEach(function (chip) {
     chip.addEventListener('click', function () {

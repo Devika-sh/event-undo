@@ -62,6 +62,45 @@ img { display: block; max-width: 100%; }
 }
 
 /* ==========================================================================
+   Page Loader (splash screen)
+   Full-viewport brand-orange spinner shown briefly on entry to every page;
+   removed from the a11y tree and faded out once the page is ready.
+   ========================================================================== */
+
+.page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: var(--bg-primary);
+  opacity: 1;
+  transition: opacity 320ms ease;
+}
+
+.page-loader[data-hidden] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.page-loader__spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  border: 4px solid var(--border-inactive);
+  border-top-color: var(--icon-brand);
+  animation: page-loader-spin 750ms linear infinite;
+}
+
+@keyframes page-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-loader__spinner { animation-duration: 1500ms; }
+}
+
+/* ==========================================================================
    Navbar (Desktop) — active section: Discover
    Pill bar, orange highlight pill sized to the active label.
    ========================================================================== */
@@ -81,9 +120,49 @@ img { display: block; max-width: 100%; }
   top: var(--space-4xl);
   left: 0;
   right: 0;
+  max-width: 1440px;
+  margin-inline: auto;
   display: flex;
+  align-items: center;
   justify-content: center;
   z-index: 3;
+}
+
+/* Desktop: the nav pill stays pinned to the viewport while the page scrolls,
+   so the logo (below) has a fixed home to animate into. Absolute on phone —
+   the mobile bar still scrolls away with the hero, unchanged. */
+@media (min-width: 721px) {
+  .navbar-wrap { position: fixed; }
+}
+
+/* Hidden at rest — the hero picture already carries the wordmark. Revealed
+   next to the pinned nav once .masthead picks up .is-scrolled (see the
+   scroll listener in index.html), sliding in from the left.
+   Only shown from 1300px up: the nav pill's own link spacing already runs
+   ~850px wide, so below that there isn't reliably clear room beside it for
+   the logo without the two crowding or overlapping. */
+.masthead__logo { display: none; }
+
+@media (min-width: 1300px) {
+  .masthead__logo {
+    display: block;
+    position: absolute;
+    left: var(--space-5xl);
+    top: 50%;
+    width: 151px;
+    height: 25px;
+    opacity: 0;
+    transform: translateY(-50%) translateX(-24px);
+    pointer-events: none;
+    transition: opacity 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .masthead.is-scrolled .masthead__logo {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+    pointer-events: auto;
+  }
 }
 
 .navbar {
