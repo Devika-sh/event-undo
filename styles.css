@@ -154,6 +154,14 @@ body.page-exit {
      as glass. Falls back to the plain gradient where unsupported. */
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  /* backdrop-filter has no gradient falloff of its own — it's uniformly
+     applied across the whole box, so without this the blur just stops dead
+     at the 128px edge. A mask fades the element's own alpha out (blur and
+     background both), so the blur itself tapers to nothing by the bottom
+     instead of cutting off — same stops as the background gradient, so the
+     two fades track together. */
+  mask-image: linear-gradient(to bottom, black 0%, black 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 40%, transparent 100%);
   z-index: 15;
   opacity: 0;
   pointer-events: none;
