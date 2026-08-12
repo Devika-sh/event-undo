@@ -230,6 +230,11 @@
   color: var(--text-primary);
 }
 
+/* The org's type (club, organisation, cell…), sitting under the category line
+   as the last piece of identity — not in the about copy, which is prose.
+   Hugs its label rather than stretching the flex column. */
+.org-card__type-chip { align-self: flex-start; }
+
 .org-socials {
   display: flex;
   align-items: center;
@@ -267,24 +272,12 @@
   flex: 1;
   min-width: 0;
   align-self: center;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
-}
-
-/* Shows the org's type (club, department, cell…) so it reads at a glance
-   without repeating it in the copy below. */
-.org-card__type-chip {
-  align-self: flex-start;
-}
-
-.org-card__about-copy {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-6xl);   /* Figma 142 (space-between) → nearest token 160 */
 }
 
-.org-card__about-copy p {
+.org-card__about p {
   font-size: var(--font-size-body-md);      /* Body 2xl/Medium (18) */
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-body-md);
@@ -409,16 +402,20 @@
     line-height: 1.2;
   }
 
+  /* .org-identity zeroes its gap here, so the chip carries its own offset
+     rather than sitting flush against the category line. */
+  .org-card__type-chip { margin-top: var(--space-md); }
+
   /* Bigger than the desktop 17x17 mark, matching the Profile Card's social
      icon size at 22px. */
   .org-socials__icon { width: 22px; height: 22px; }
 
-  .org-card__about { align-self: stretch; }
-  .org-card__about-copy {
+  .org-card__about {
+    align-self: stretch;
     grid-template-columns: 1fr;
     gap: var(--space-3xl);    /* 24 */
   }
-  .org-card__about-copy p {
+  .org-card__about p {
     font-size: var(--font-size-body-sm);      /* Body xl/Regular (16) */
     font-weight: var(--font-weight-regular);
   }

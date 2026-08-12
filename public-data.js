@@ -426,6 +426,8 @@ async function hydrateOrganizations() {
           <div class="org-identity">
             <h2 class="org-identity__name">${esc(org.name)}</h2>
             <p class="org-identity__category">${esc(org.category || '')}</p>
+            ${org.type ? `<span class="chip org-card__type-chip">${
+              esc(org.type.charAt(0).toUpperCase() + org.type.slice(1))}</span>` : ''}
           </div>
           <div class="org-socials">
             ${social(org.instagram_url, 'instagram', 'on Instagram')}
@@ -435,10 +437,7 @@ async function hydrateOrganizations() {
         </div>
       </div>
       <div class="org-card__about">
-        ${org.type ? `<span class="chip org-card__type-chip">${esc(org.type.charAt(0).toUpperCase() + org.type.slice(1))}</span>` : ''}
-        <div class="org-card__about-copy">
-          ${paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
-        </div>
+        ${paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
       </div>
     </article>`;
   }).join('');
