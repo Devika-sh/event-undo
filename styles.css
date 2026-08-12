@@ -504,10 +504,13 @@ body.is-scrolled .navbar {
   border-radius: inherit;
 }
 
-/* Card hover leaves the card itself untouched — only its tag chips pick up
-   the same bg-hover cue .chip:hover already uses elsewhere, so hovering the
-   card reads as "these chips are interactive" rather than recoloring the card. */
-.card:has(.card__link):hover .card__tags .chip { background: var(--bg-hover); }
+/* Tag chips sit above the card__link overlay so the mouse reaches each chip
+   individually — the existing .chip:hover rule then applies per-chip, not to
+   the row as a whole. */
+.card__tags .chip {
+  position: relative;
+  z-index: 2;
+}
 
 /* --- 1. Media block (Image / Card variant) --- */
 
