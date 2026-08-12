@@ -1503,6 +1503,108 @@ body.is-scrolled .navbar {
   font-size: var(--font-size-body-2xs);
 }
 
+/* Dropzone — replaces a bare <input type="file"> everywhere one appears
+   (profile photo, event banner, org logo). Markup is rendered by
+   dropzone.js from a `<div class="a-dropzone" data-input-id="…">` stub, so
+   every instance stays in sync instead of drifting per page. */
+.a-dropzone {
+  position: relative;
+  border: var(--width-xl) dashed var(--colour-gray-600);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.a-dropzone--drag {
+  border-color: var(--border-brand);
+  background: var(--bg-hover);
+}
+
+.a-dropzone__empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl) var(--space-xl);
+  text-align: center;
+  cursor: pointer;
+}
+
+.a-dropzone__icon {
+  width: 40px;
+  height: 40px;
+  color: var(--icon-inactive);
+}
+
+.a-dropzone__icon svg { width: 100%; height: 100%; }
+
+.a-dropzone__text {
+  margin: 0;
+  font-size: var(--font-size-body-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.a-dropzone__hint {
+  margin: 0;
+  font-size: var(--font-size-body-2xs);
+  color: var(--text-tertiary);
+}
+
+.a-dropzone__browse { margin-top: var(--space-sm); }
+
+.a-dropzone__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-xl);
+}
+
+.a-dropzone__file-icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  color: var(--icon-brand);
+}
+
+.a-dropzone__file-icon svg { width: 100%; height: 100%; }
+
+.a-dropzone__file-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.a-dropzone__file-name {
+  font-size: var(--font-size-body-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.a-dropzone__file-size {
+  font-size: var(--font-size-body-3xs);
+  color: var(--text-tertiary);
+}
+
+.a-dropzone__remove {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: var(--font-size-body-sm);
+  line-height: 1;
+}
+.a-dropzone__remove:hover { background: var(--bg-hover); color: var(--text-brand); }
+
 /* ==========================================================================
    SKELETON LOADER
    Shimmering placeholder used on public pages while Supabase data is still

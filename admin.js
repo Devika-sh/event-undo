@@ -14,6 +14,7 @@ import {
   signOut, logActivity, formatDate, formatTime, formatFee, formatShort,
   toLocalInput, slugify, esc, initials
 } from './supabase-client.js';
+import { initDropzones } from './dropzone.js';
 
 /* ==========================================================================
    1. State + tiny DOM helpers
@@ -478,20 +479,31 @@ function renderEvents() {
           <button class="a-icon-btn" type="button" title="Attendees"
                   data-action="event-attendees" data-id="${esc(e.id)}">
             <span class="a-icon-btn__glyph a-icon-btn__glyph--people"></span></button>
+          ${canManageEvent(e) ? `
           <button class="a-icon-btn" type="button" title="Edit"
                   data-action="edit-event" data-id="${esc(e.id)}">
             <span class="a-icon-btn__glyph a-icon-btn__glyph--edit"></span></button>
           <button class="a-icon-btn" type="button" title="Delete"
                   data-action="delete-event" data-id="${esc(e.id)}">
-            <span class="a-icon-btn__glyph a-icon-btn__glyph--delete"></span></button>
+            <span class="a-icon-btn__glyph a-icon-btn__glyph--delete"></span></button>` : ''}
         </div>
       </td>
     </tr>`).join('')
     : emptyRow(8, 'No events match', 'Adjust the filters, or create a new event.');
 }
 
+// Volunteers may only manage events that belong to their own organisation —
+// admins manage everything. This mirrors the events_insert/update/delete RLS
+// policies in supabase-schema.sql so the UI never offers a control that the
+// database would reject.
+const canManageEvent = (e) => isAdmin(store.me) || e.organization_id === store.me.organization_id;
+
 function eventForm(ev = {}) {
-  const orgOptions = store.orgs.map((o) =>
+  const lockOrg = !isAdmin(store.me);
+  const myOrgId = store.me.organization_id;
+  const orgOptions = store.orgs
+    .filter((o) => !lockOrg || o.id === myOrgId)
+    .map((o) =>
     `<option value="${esc(o.id)}"${ev.organization_id === o.id ? ' selected' : ''}>${esc(o.name)}</option>`
   ).join('');
 
@@ -513,9 +525,14 @@ function eventForm(ev = {}) {
     <div class="a-form__row">
       <div class="a-field">
         <label class="a-field__label" for="ev-org">Organisation</label>
-        <select class="a-select" id="ev-org" required>
-          <option value="">Choose…</option>${orgOptions}
+        <select class="a-select" id="ev-org" required${lockOrg ? ' disabled' : ''}>
+          ${lockOrg ? '' : '<option value="">Choose…</option>'}${orgOptions}
         </select>
+        ${lockOrg
+          ? (myOrgId
+              ? '<span class="a-field__hint">Locked to your organisation.</span>'
+              : '<span class="a-field__hint">You aren\'t assigned to an organisation yet — ask an admin to set one before creating events.</span>')
+          : ''}
       </div>
       <div class="a-field">
         <label class="a-field__label" for="ev-organizer">Organiser label</label>
@@ -587,7 +604,8 @@ function eventForm(ev = {}) {
       </div>
       <div class="a-field">
         <label class="a-field__label" for="ev-banner-file">Upload banner</label>
-        <input class="a-input" id="ev-banner-file" type="file" accept="image/*" />
+        <div class="a-dropzone" data-dropzone data-input-id="ev-banner-file" data-accept="image/*"
+             data-hint="JPEG or PNG, up to 5MB"></div>
       </div>
     </div>
 
@@ -641,6 +659,7 @@ async function openEventEditor(id) {
     wide: true,
     body: eventForm(ev),
     onMount: (body) => {
+      initDropzones(body);
       // Chips toggle in place, exactly like the public filter row.
       body.querySelectorAll('#ev-tags .chip').forEach((chip) => {
         chip.addEventListener('click', () => chip.classList.toggle('chip--selected'));
@@ -662,6 +681,14 @@ async function saveEvent(id, btn) {
   if (!title)     { setError('event-error', 'The event needs a title.'); return; }
   if (!orgId)     { setError('event-error', 'Pick the organisation running this.'); return; }
   if (!startsAt)  { setError('event-error', 'Pick a start date and time.'); return; }
+  if (!isAdmin(store.me) && orgId !== store.me.organization_id) {
+    setError('event-error', 'You can only manage events for your own organisation.');
+    return;
+  }
+  if (id && !canManageEvent(store.events.find((e) => e.id === id) || {})) {
+    setError('event-error', 'You can only manage events for your own organisation.');
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Saving…';
@@ -890,7 +917,8 @@ function openOrgEditor(id) {
         </div>
         <div class="a-field">
           <label class="a-field__label" for="og-logo-file">Upload logo</label>
-          <input class="a-input" id="og-logo-file" type="file" accept="image/*" />
+          <div class="a-dropzone" data-dropzone data-input-id="og-logo-file" data-accept="image/*"
+               data-hint="JPEG or PNG, up to 5MB"></div>
         </div>
       </div>
 
@@ -927,7 +955,8 @@ function openOrgEditor(id) {
       { label: 'Cancel', variant: 'ghost', onClick: closeModal },
       { label: id ? 'Save changes' : 'Create', onClick: (btn) => saveOrg(id, btn) }
     ],
-    onMount: () => {
+    onMount: (body) => {
+      initDropzones(body);
       const typeSelect = $('#og-type');
       const typeNew = $('#og-type-new');
       typeSelect.addEventListener('change', () => {

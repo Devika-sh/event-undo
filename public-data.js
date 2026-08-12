@@ -14,6 +14,7 @@ import {
   supabase, isConfigured, getSession,
   formatDate, formatTime, formatFee, esc, initials, timingOf
 } from './supabase-client.js';
+import { initDropzones, resetDropzone } from './dropzone.js';
 
 if (isConfigured) init();
 
@@ -700,6 +701,8 @@ function wireProfileEdit(profile, topics, mine, orgs) {
   const form = document.getElementById('profile-edit');
   if (!toggle || !modal || !form) return;
 
+  initDropzones(modal);
+
   const picker = document.getElementById('pe-interests');
   const counter = document.getElementById('pe-interests-count');
   const orgSelect = document.getElementById('pe-org');
@@ -750,7 +753,7 @@ function wireProfileEdit(profile, topics, mine, orgs) {
     document.getElementById('pe-bio').value = profile?.bio || '';
     document.getElementById('pe-instagram').value = profile?.instagram_url || '';
     document.getElementById('pe-linkedin').value = profile?.linkedin_url || '';
-    document.getElementById('pe-photo').value = '';
+    resetDropzone(document.getElementById('pe-photo'));
     buildPicker();   // rebuilt each time, so Cancel really does discard
     setFormError('profile-error', '');
 
