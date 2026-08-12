@@ -23,7 +23,7 @@ create table if not exists public.organizations (
   name          text not null,
   slug          text not null unique,
   category      text,                       -- "Innovation & Entrepreneurship"
-  type          text not null default 'club' check (type in ('club','organisation')),
+  type          text not null default 'club', -- filter chip; admins can add new ones from the dashboard
   initials      text,                       -- fallback mark, e.g. "CI", "µL"
   logo_url      text,
   about         text,                       -- blank line separates paragraphs
@@ -66,6 +66,11 @@ alter table public.profiles add column if not exists department text;
 alter table public.profiles add column if not exists semester text;
 alter table public.profiles add column if not exists favorite_organization_id
   uuid references public.organizations(id) on delete set null;
+
+-- `type` used to be locked to ('club','organisation') via CHECK; dropped so
+-- admins can introduce new organisation types from the dashboard without a
+-- schema change. Safe to re-run — no-op once already dropped.
+alter table public.organizations drop constraint if exists organizations_type_check;
 
 -- Filter chips on Discover + interest chips on the profile card.
 -- `group_name` maps to the separated groups in the filter row.

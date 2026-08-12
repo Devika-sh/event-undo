@@ -131,6 +131,14 @@
   gap: var(--space-4xl);
 }
 
+.org-list__empty {
+  margin: 0;
+  padding: var(--space-5xl) var(--space-3xl);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-sm);
+}
+
 .org-card {
   display: flex;
   align-items: stretch;

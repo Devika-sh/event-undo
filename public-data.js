@@ -287,6 +287,8 @@ async function hydrateOrganizations() {
     .select('*').eq('is_active', true).order('name');
   if (error || !data?.length) return;
 
+  buildOrgFilters(data);
+
   list.innerHTML = data.map((org) => {
     const paragraphs = (org.about || '').split(/\n{2,}/).filter(Boolean);
     const social = (url, kind, label) => url
@@ -295,7 +297,7 @@ async function hydrateOrganizations() {
       : '';
 
     return `
-    <article class="org-card">
+    <article class="org-card" data-type="${esc(org.type || '')}">
       <div class="org-card__profile">
         ${org.logo_url
           ? `<span class="org-logo org-logo--art"><img src="${esc(org.logo_url)}" alt="" /></span>`
@@ -317,6 +319,21 @@ async function hydrateOrganizations() {
       </div>
     </article>`;
   }).join('');
+}
+
+/** Rebuilds the chip row from whatever `type` values actually exist on
+ *  active organisations — a new type typed into the dashboard shows up here
+ *  automatically, no code change needed. Filtering itself is handled by the
+ *  delegated listener in organizations.html, which reads data-type off
+ *  whatever cards are on the page — static or this dynamic markup alike. */
+function buildOrgFilters(orgs) {
+  const bar = document.querySelector('.org-filters');
+  if (!bar) return;
+
+  const types = [...new Set(orgs.map((o) => o.type).filter(Boolean))].sort();
+  bar.innerHTML = types.map((t) => `
+    <button class="chip" type="button" data-type="${esc(t)}">
+      ${esc(t.charAt(0).toUpperCase() + t.slice(1))}</button>`).join('');
 }
 
 /* ==========================================================================

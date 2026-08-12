@@ -85,10 +85,13 @@
            width="428" height="274" />
     </div>
 
-    <!-- Filter Chips — Default state; click toggles to On Click (selected). -->
+    <!-- Filter Chips — Default state; click toggles to On Click (selected).
+         Static fallback for when Supabase isn't configured; public-data.js
+         rebuilds this row from whatever org `type` values actually exist,
+         so a new type added from the dashboard gets its own chip for free. -->
     <div class="org-filters" role="group" aria-label="Filter organizations">
-      <button class="chip" type="button">Club</button>
-      <button class="chip" type="button">Organisation</button>
+      <button class="chip" type="button" data-type="club">Club</button>
+      <button class="chip" type="button" data-type="organisation">Organisation</button>
     </div>
   </header>
 
@@ -96,7 +99,7 @@
   <section class="org-list" aria-label="Organizations">
 
     <!-- Org Card 1 -->
-    <article class="org-card">
+    <article class="org-card" data-type="organisation">
       <div class="org-card__profile">
         <!-- Org Icon slot — swap the initials mark for the org's own logo:
              <span class="org-logo org-logo--art"><img src="…" alt=""></span> -->
@@ -140,7 +143,7 @@
     </article>
 
     <!-- Org Card 2 -->
-    <article class="org-card">
+    <article class="org-card" data-type="club">
       <div class="org-card__profile">
         <span class="org-logo" aria-hidden="true">µL</span>
 
@@ -179,7 +182,7 @@
     </article>
 
     <!-- Org Card 3 -->
-    <article class="org-card">
+    <article class="org-card" data-type="organisation">
       <div class="org-card__profile">
         <span class="org-logo" aria-hidden="true">IEEE</span>
 
@@ -280,12 +283,45 @@
     update();
   })();
 
-  // Filter chips: Default → On Click (selected) → Default
-  document.querySelectorAll('.org-filters .chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
+  // Filter chips: Default → On Click (selected) → Default. Delegated on the
+  // container (not the individual chips) because public-data.js rebuilds the
+  // chip row from live org `type` values once Supabase data lands — a plain
+  // per-chip listener would go stale the moment that swap happens.
+  (function () {
+    var bar = document.querySelector('.org-filters');
+    var list = document.querySelector('.org-list');
+    if (!bar || !list) return;
+
+    function applyFilter() {
+      var selected = Array.prototype.slice
+        .call(bar.querySelectorAll('.chip--selected'))
+        .map(function (c) { return c.dataset.type; });
+      var anyVisible = false;
+      Array.prototype.forEach.call(list.querySelectorAll('.org-card'), function (card) {
+        var show = !selected.length || selected.indexOf(card.dataset.type) !== -1;
+        card.hidden = !show;
+        if (show) anyVisible = true;
+      });
+      var empty = list.querySelector('.org-list__empty');
+      if (!anyVisible) {
+        if (!empty) {
+          empty = document.createElement('p');
+          empty.className = 'org-list__empty';
+          empty.textContent = 'No organisations match that filter yet.';
+          list.appendChild(empty);
+        }
+      } else if (empty) {
+        empty.remove();
+      }
+    }
+
+    bar.addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip || !bar.contains(chip)) return;
       chip.classList.toggle('chip--selected');
+      applyFilter();
     });
-  });
+  })();
 
   // Mobile menu toggle: hamburger <-> x-close. Same behaviour as the
   // Discover page's script, scoped to this page's own header/menu.

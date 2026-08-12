@@ -832,6 +832,15 @@ function renderOrgs() {
     : emptyRow(6, 'No organisations', 'Add the clubs and societies that run events.');
 }
 
+/** Every type currently in use, plus the two defaults — so the dropdown
+ *  always reflects whatever admins have added, without a lookup table. */
+function orgTypeOptions(current) {
+  const types = new Set(['club', 'organisation']);
+  store.orgs.forEach((o) => { if (o.type) types.add(o.type); });
+  if (current) types.add(current);
+  return [...types].sort();
+}
+
 function openOrgEditor(id) {
   const o = store.orgs.find((x) => x.id === id) || {};
 
@@ -858,9 +867,13 @@ function openOrgEditor(id) {
         <div class="a-field">
           <label class="a-field__label" for="og-type">Type</label>
           <select class="a-select" id="og-type">
-            ${['club', 'organisation'].map((t) =>
-              `<option value="${t}"${o.type === t ? ' selected' : ''}>${t}</option>`).join('')}
+            ${orgTypeOptions(o.type).map((t) =>
+              `<option value="${esc(t)}"${o.type === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}
+            <option value="__new__">+ Add new type…</option>
           </select>
+          <input class="a-input" id="og-type-new" style="margin-top:8px" hidden
+                 placeholder="e.g. community, chapter" />
+          <span class="a-field__hint">Powers the filter chips on the public Organisations page.</span>
         </div>
         <div class="a-field">
           <label class="a-field__label" for="og-initials">Initials mark</label>
@@ -913,7 +926,15 @@ function openOrgEditor(id) {
     actions: [
       { label: 'Cancel', variant: 'ghost', onClick: closeModal },
       { label: id ? 'Save changes' : 'Create', onClick: (btn) => saveOrg(id, btn) }
-    ]
+    ],
+    onMount: () => {
+      const typeSelect = $('#og-type');
+      const typeNew = $('#og-type-new');
+      typeSelect.addEventListener('change', () => {
+        typeNew.hidden = typeSelect.value !== '__new__';
+        if (!typeNew.hidden) typeNew.focus();
+      });
+    }
   });
 }
 
@@ -921,6 +942,12 @@ async function saveOrg(id, btn) {
   setError('org-error', '');
   const name = $('#og-name').value.trim();
   if (!name) { setError('org-error', 'Give the organisation a name.'); return; }
+
+  let type = $('#og-type').value;
+  if (type === '__new__') {
+    type = $('#og-type-new').value.trim().toLowerCase();
+    if (!type) { setError('org-error', 'Name the new organisation type.'); return; }
+  }
 
   btn.disabled = true;
   btn.textContent = 'Saving…';
@@ -936,7 +963,7 @@ async function saveOrg(id, btn) {
     name,
     slug: slugify(name),
     category: $('#og-category').value.trim() || null,
-    type: $('#og-type').value,
+    type,
     initials: $('#og-initials').value.trim() || null,
     logo_url: logoUrl || null,
     about: $('#og-about').value.trim() || null,
