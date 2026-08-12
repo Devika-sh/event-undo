@@ -107,16 +107,6 @@ export function formatShort(iso) {
   return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}, ${formatTime(iso)}`;
 }
 
-/** ISO timestamp → the value a <input type="datetime-local"> expects. */
-export function toLocalInput(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-         `T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export function slugify(text) {
   return String(text).toLowerCase().trim()
     .replace(/[^a-z0-9]+/g, '-')

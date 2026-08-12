@@ -12,9 +12,12 @@
 import {
   supabase, isConfigured, getSession, getProfile, isAdmin, isStaff,
   signOut, logActivity, formatDate, formatTime, formatFee, formatShort,
-  toLocalInput, slugify, esc, initials
+  slugify, esc, initials
 } from './supabase-client.js';
 import { initDropzones } from './dropzone.js';
+// Side-effect only: wires every .a-select into the custom dropdown once it's
+// in the DOM, including selects inside modals rendered later. See dropdown.js.
+import './dropdown.js';
 
 /* ==========================================================================
    1. State + tiny DOM helpers
@@ -498,6 +501,47 @@ function renderEvents() {
 // database would reject.
 const canManageEvent = (e) => isAdmin(store.me) || e.organization_id === store.me.organization_id;
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** Day / Month / Year segmented picker (three selects, dropdown.js gives
+ *  each its own listbox) plus a plain time input — replaces the single
+ *  datetime-local field the event Starts/Ends rows used to use. */
+function dateSelectGroup(prefix, iso) {
+  const d = iso ? new Date(iso) : null;
+  const day = d ? d.getDate() : '';
+  const month = d ? d.getMonth() : '';
+  const year = d ? d.getFullYear() : '';
+  const time = d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+
+  const dayOpts = Array.from({ length: 31 }, (_, i) => i + 1)
+    .map((n) => `<option value="${n}"${day === n ? ' selected' : ''}>${n}</option>`).join('');
+  const monthOpts = MONTH_NAMES
+    .map((name, i) => `<option value="${i}"${month === i ? ' selected' : ''}>${name}</option>`).join('');
+  const thisYear = new Date().getFullYear();
+  const yearOpts = Array.from({ length: 6 }, (_, i) => thisYear - 1 + i)
+    .map((y) => `<option value="${y}"${year === y ? ' selected' : ''}>${y}</option>`).join('');
+
+  return `
+  <div class="eu-date-group">
+    <select class="a-select" id="${prefix}-day" aria-label="Day"><option value="">Day</option>${dayOpts}</select>
+    <select class="a-select" id="${prefix}-month" aria-label="Month"><option value="">Month</option>${monthOpts}</select>
+    <select class="a-select" id="${prefix}-year" aria-label="Year"><option value="">Year</option>${yearOpts}</select>
+  </div>
+  <input class="a-input" id="${prefix}-time" type="time" aria-label="Time" value="${esc(time)}" />`;
+}
+
+/** Reads a dateSelectGroup(prefix, …) back into a Date, or null if the day,
+ *  month or year hasn't been picked yet. Time defaults to midnight. */
+function composeDate(prefix) {
+  const day = $(`#${prefix}-day`).value;
+  const month = $(`#${prefix}-month`).value;
+  const year = $(`#${prefix}-year`).value;
+  if (!day || month === '' || !year) return null;
+  const [hh, mm] = ($(`#${prefix}-time`).value || '00:00').split(':').map(Number);
+  return new Date(Number(year), Number(month), Number(day), hh || 0, mm || 0);
+}
+
 function eventForm(ev = {}) {
   const lockOrg = !isAdmin(store.me);
   const myOrgId = store.me.organization_id;
@@ -543,14 +587,12 @@ function eventForm(ev = {}) {
 
     <div class="a-form__row">
       <div class="a-field">
-        <label class="a-field__label" for="ev-start">Starts</label>
-        <input class="a-input" id="ev-start" type="datetime-local" required
-               value="${esc(toLocalInput(ev.starts_at))}" />
+        <label class="a-field__label" for="ev-start-day">Starts</label>
+        ${dateSelectGroup('ev-start', ev.starts_at)}
       </div>
       <div class="a-field">
-        <label class="a-field__label" for="ev-end">Ends</label>
-        <input class="a-input" id="ev-end" type="datetime-local"
-               value="${esc(toLocalInput(ev.ends_at))}" />
+        <label class="a-field__label" for="ev-end-day">Ends</label>
+        ${dateSelectGroup('ev-end', ev.ends_at)}
       </div>
     </div>
 
@@ -676,11 +718,12 @@ async function saveEvent(id, btn) {
   setError('event-error', '');
   const title = $('#ev-title').value.trim();
   const orgId = $('#ev-org').value;
-  const startsAt = $('#ev-start').value;
+  const startsDate = composeDate('ev-start');
+  const endsDate = composeDate('ev-end');
 
-  if (!title)     { setError('event-error', 'The event needs a title.'); return; }
-  if (!orgId)     { setError('event-error', 'Pick the organisation running this.'); return; }
-  if (!startsAt)  { setError('event-error', 'Pick a start date and time.'); return; }
+  if (!title)      { setError('event-error', 'The event needs a title.'); return; }
+  if (!orgId)      { setError('event-error', 'Pick the organisation running this.'); return; }
+  if (!startsDate) { setError('event-error', 'Pick a start day, month and year.'); return; }
   if (!isAdmin(store.me) && orgId !== store.me.organization_id) {
     setError('event-error', 'You can only manage events for your own organisation.');
     return;
@@ -702,14 +745,14 @@ async function saveEvent(id, btn) {
 
   const payload = {
     title,
-    slug: slugify(title) + '-' + startsAt.slice(0, 10),
+    slug: slugify(title) + '-' + startsDate.toISOString().slice(0, 10),
     organization_id: orgId,
     organizer_label: $('#ev-organizer').value.trim() || null,
     summary: $('#ev-summary').value.trim() || null,
     description: $('#ev-description').value.trim() || null,
     banner_url: bannerUrl || null,
-    starts_at: new Date(startsAt).toISOString(),
-    ends_at: $('#ev-end').value ? new Date($('#ev-end').value).toISOString() : null,
+    starts_at: startsDate.toISOString(),
+    ends_at: endsDate ? endsDate.toISOString() : null,
     venue: $('#ev-venue').value.trim() || null,
     mode: $('#ev-mode').value,
     fee_amount: Number($('#ev-fee').value || 0),

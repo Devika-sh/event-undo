@@ -1468,6 +1468,114 @@ body.is-scrolled .navbar {
   background-position: right var(--space-xl) center;
 }
 
+/* ==========================================================================
+   Custom select dropdown — rendered by dropdown.js over every .a-select. The
+   original <select> stays in the DOM (hidden) as the real form control; this
+   is just its face: a pill trigger plus a listbox card with a checkmark on
+   the selected row and a brand-gradient fill on the hovered/keyboard-active
+   one, replacing the browser's native menu chrome everywhere in the app.
+   ========================================================================== */
+.eu-dd { position: relative; width: 100%; }
+
+.eu-dd__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-lg) var(--space-xl);
+  border: var(--width-lg) solid var(--colour-gray-600);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+  color: var(--text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-body-xs);
+  line-height: var(--line-height-body-md);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.eu-dd__value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.eu-dd__chevron {
+  flex: none;
+  display: flex;
+  color: var(--text-tertiary);
+  transition: transform 160ms ease;
+}
+
+.eu-dd--open .eu-dd__chevron { transform: rotate(180deg); }
+
+.eu-dd__trigger:focus-visible,
+.eu-dd--open .eu-dd__trigger {
+  outline: none;
+  border-color: var(--border-brand);
+  border-width: var(--width-xl);
+  /* Compensate for the 1px the thicker border adds, so nothing shifts. */
+  padding: calc(var(--space-lg) - 1px) calc(var(--space-xl) - 1px);
+}
+
+.eu-dd__trigger:disabled {
+  color: var(--text-tertiary);
+  background: var(--bg-inactive);
+  cursor: not-allowed;
+}
+
+.eu-dd__menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + var(--space-sm));
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-sm);
+  list-style: none;
+  border: var(--width-lg) solid var(--colour-gray-600);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+  box-shadow: 0 12px 32px var(--colour-alpha-20);
+}
+
+.eu-dd__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-body-xs);
+  line-height: var(--line-height-body-md);
+  cursor: pointer;
+}
+
+.eu-dd__check {
+  flex: none;
+  display: flex;
+  width: 14px;
+  color: var(--text-brand);
+  visibility: hidden;
+}
+
+.eu-dd__option[aria-selected="true"] .eu-dd__check { visibility: visible; }
+
+.eu-dd__option--active {
+  background: linear-gradient(135deg, var(--colour-orange-500) 0%, var(--colour-orange-400) 100%);
+  color: var(--text-white);
+}
+
+.eu-dd__option--active .eu-dd__check { color: var(--text-white); }
+
+.eu-dd__option--disabled { color: var(--text-tertiary); cursor: not-allowed; }
+.eu-dd__option--disabled.eu-dd__option--active { background: none; color: var(--text-tertiary); }
+
+/* Segmented picker (Day / Month / Year) — a row of .eu-dd selects instead of
+   one stacked full-width, used by the event editor's date fields. */
+.eu-date-group { display: flex; gap: var(--space-md); }
+.eu-date-group .eu-dd { width: auto; flex: 1; }
+
 /* Chip multi-select — wraps the public .chip in a field-shaped box. Shared:
    the dashboard's event editor tags an event with it, the profile page picks
    interests with it. */

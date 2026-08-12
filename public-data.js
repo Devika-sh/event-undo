@@ -15,6 +15,9 @@ import {
   formatDate, formatTime, formatFee, esc, initials, timingOf
 } from './supabase-client.js';
 import { initDropzones, resetDropzone } from './dropzone.js';
+// Side-effect only: wires every .a-select into the custom dropdown once it's
+// in the DOM (the profile edit form's Semester/Favourite org selects). See dropdown.js.
+import './dropdown.js';
 
 if (isConfigured) init();
 
