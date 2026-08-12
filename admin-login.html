@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>eventundo — Admin sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body class="admin-body">
+
+<main class="a-login">
+
+  <!-- Brand panel: the footer gradient, so the console is unmistakably
+       EventUndo before any data has loaded. -->
+  <aside class="a-login__brand paint-footer-bg">
+    <p class="a-login__brand-mark">eventundo</p>
+    <div class="a-login__brand-copy">
+      <h1 class="a-login__brand-title">The console behind the events.</h1>
+      <p class="a-login__brand-text">
+        Publish events, keep your organisation's page current, and see who's
+        actually turning up — all from one place.
+      </p>
+    </div>
+    <p class="a-login__watermark" aria-hidden="true">eventundo</p>
+  </aside>
+
+  <section class="a-login__panel">
+    <div class="a-login__form">
+
+      <!-- Shown instead of the form while supabase-config.js is unfilled. -->
+      <div id="setup-gate" hidden>
+        <h2 class="a-login__title">Connect Supabase</h2>
+        <p class="a-login__sub">
+          The dashboard is built and ready — it just needs your project's keys.
+        </p>
+        <div class="a-note">
+          <p style="margin:0 0 12px">Two steps:</p>
+          <ol style="margin:0;padding-left:20px">
+            <li style="margin-bottom:8px">
+              Run <code>supabase-schema.sql</code> in the Supabase SQL editor.
+            </li>
+            <li>
+              Put your Project URL and anon key into <code>supabase-config.js</code>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ---- Sign in ---- -->
+      <form id="signin-form" novalidate>
+        <h2 class="a-login__title">Sign in</h2>
+        <p class="a-login__sub">Admin and volunteer access to the eventundo console.</p>
+
+        <div class="a-form">
+          <p class="a-form__error" id="signin-error" hidden role="alert"></p>
+
+          <div class="a-field">
+            <label class="a-field__label" for="signin-email">Email</label>
+            <input class="a-input" id="signin-email" name="email" type="email"
+                   autocomplete="email" required placeholder="you@college.edu" />
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="signin-password">Password</label>
+            <input class="a-input" id="signin-password" name="password" type="password"
+                   autocomplete="current-password" required placeholder="••••••••" />
+          </div>
+
+          <button class="a-btn a-btn--block" id="signin-submit" type="submit">Sign in</button>
+
+          <button class="a-btn a-btn--ghost a-btn--block a-btn--sm" id="reset-btn" type="button">
+            Email me a reset link
+          </button>
+        </div>
+      </form>
+
+      <!-- ---- First-run owner account ----
+           The schema's handle_new_user trigger promotes the first account in
+           an empty database to admin; after that this form just creates a
+           plain user, so it stays tucked behind a link. -->
+      <form id="signup-form" hidden novalidate>
+        <h2 class="a-login__title">Create the first account</h2>
+        <p class="a-login__sub">
+          On an empty database the first account becomes the admin. After that,
+          new volunteers are invited from inside the dashboard.
+        </p>
+
+        <div class="a-form">
+          <p class="a-form__error" id="signup-error" hidden role="alert"></p>
+
+          <div class="a-field">
+            <label class="a-field__label" for="signup-name">Full name</label>
+            <input class="a-input" id="signup-name" type="text" autocomplete="name" required />
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="signup-email">Email</label>
+            <input class="a-input" id="signup-email" type="email" autocomplete="email" required />
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="signup-password">Password</label>
+            <input class="a-input" id="signup-password" type="password"
+                   autocomplete="new-password" minlength="8" required />
+            <span class="a-field__hint">At least 8 characters.</span>
+          </div>
+
+          <button class="a-btn a-btn--block" id="signup-submit" type="submit">Create account</button>
+        </div>
+      </form>
+
+      <p class="a-login__meta">
+        <a href="#" id="toggle-mode">First time here? Create the owner account</a>
+        <span aria-hidden="true"> · </span>
+        <a href="index.html">Back to eventundo</a>
+      </p>
+
+    </div>
+  </section>
+</main>
+
+<div class="a-toasts" id="toasts" aria-live="polite"></div>
+
+<script type="module">
+  import { supabase, isConfigured } from './supabase-client.js';
+
+  const $ = (id) => document.getElementById(id);
+  const signinForm = $('signin-form');
+  const signupForm = $('signup-form');
+  const toggle = $('toggle-mode');
+
+  function toast(message, kind = '') {
+    const el = document.createElement('div');
+    el.className = 'a-toast' + (kind ? ' a-toast--' + kind : '');
+    el.textContent = message;
+    $('toasts').append(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  function showError(id, message) {
+    const box = $(id);
+    box.textContent = message;
+    box.hidden = !message;
+  }
+
+  if (!isConfigured) {
+    $('setup-gate').hidden = false;
+    signinForm.hidden = true;
+    toggle.hidden = true;
+  } else {
+    // Already signed in? Skip straight through.
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) location.replace('admin.html');
+    });
+  }
+
+  toggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    const showingSignup = !signupForm.hidden;
+    signupForm.hidden = showingSignup;
+    signinForm.hidden = !showingSignup;
+    toggle.textContent = showingSignup
+      ? 'First time here? Create the owner account'
+      : 'Already have an account? Sign in';
+  });
+
+  signinForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showError('signin-error', '');
+    const btn = $('signin-submit');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: $('signin-email').value.trim(),
+      password: $('signin-password').value
+    });
+
+    if (error) {
+      showError('signin-error', error.message);
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+
+    // Suspended accounts can authenticate but must not reach the console.
+    const { data: profile } = await supabase
+      .from('profiles').select('role, status').eq('id', data.user.id).maybeSingle();
+
+    if (profile && profile.status === 'suspended') {
+      await supabase.auth.signOut();
+      showError('signin-error', 'This account has been suspended. Contact an admin.');
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+
+    location.replace('admin.html');
+  });
+
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showError('signup-error', '');
+    const btn = $('signup-submit');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    const { error } = await supabase.auth.signUp({
+      email: $('signup-email').value.trim(),
+      password: $('signup-password').value,
+      options: { data: { full_name: $('signup-name').value.trim() } }
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+
+    if (error) { showError('signup-error', error.message); return; }
+
+    toast('Account created. If email confirmation is on, check your inbox.', 'success');
+    toggle.click();
+  });
+
+  $('reset-btn').addEventListener('click', async () => {
+    const email = $('signin-email').value.trim();
+    if (!email) { showError('signin-error', 'Enter your email first.'); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: location.origin + location.pathname.replace('admin-login.html', 'admin.html')
+    });
+    if (error) { showError('signin-error', error.message); return; }
+    toast('Reset link sent to ' + email, 'success');
+  });
+</script>
+
+</body>
+</html>

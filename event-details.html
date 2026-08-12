@@ -372,6 +372,7 @@
       <nav class="footer__links footer__links--end" aria-label="Footer right">
         <a class="footer__link" href="team.html">The Team</a>
         <a class="footer__link" href="profile.html">Profile</a>
+        <a class="footer__link" href="admin-login.html">Admin</a>
       </nav>
     </div>
 
@@ -495,6 +496,11 @@
     });
   })();
 </script>
+
+<!-- Live data. Loads events, organisations and the roster from Supabase and
+     wires save/RSVP for the signed-in user. Falls back to the static markup
+     above when the project isn't configured. -->
+<script type="module" src="public-data.js"></script>
 
 </body>
 </html>

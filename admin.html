@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>eventundo — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body class="admin-body">
+
+<!-- Shown while the session and profile are resolving, so the shell never
+     flashes an empty sidebar to someone who's about to be bounced to login. -->
+<div class="page-loader" id="page-loader" aria-hidden="true">
+  <span class="page-loader__spinner"></span>
+</div>
+
+<div class="admin" id="admin" hidden>
+
+  <!-- ===================================================================
+       Sidebar
+       =================================================================== -->
+  <aside class="a-sidebar">
+    <a class="a-sidebar__brand" href="index.html">
+      <img src="Assets/eventundo-logo.svg" alt="eventundo" width="121" height="20" />
+      <span class="a-sidebar__tag">Admin</span>
+    </a>
+
+    <nav class="a-nav" aria-label="Dashboard sections">
+      <p class="a-nav__group">Manage</p>
+      <button class="a-nav__link" type="button" data-view="overview" aria-current="page">
+        <span class="a-nav__icon a-nav__icon--overview" aria-hidden="true"></span> Overview
+      </button>
+      <button class="a-nav__link" type="button" data-view="events">
+        <span class="a-nav__icon a-nav__icon--events" aria-hidden="true"></span> Events
+        <span class="a-nav__count" data-count="events">0</span>
+      </button>
+      <button class="a-nav__link" type="button" data-view="organizations">
+        <span class="a-nav__icon a-nav__icon--orgs" aria-hidden="true"></span> Organisations
+        <span class="a-nav__count" data-count="organizations">0</span>
+      </button>
+      <button class="a-nav__link" type="button" data-view="categories">
+        <span class="a-nav__icon a-nav__icon--tags" aria-hidden="true"></span> Categories
+      </button>
+
+      <p class="a-nav__group">People</p>
+      <button class="a-nav__link" type="button" data-view="volunteers" data-admin-only>
+        <span class="a-nav__icon a-nav__icon--team" aria-hidden="true"></span> Volunteers
+        <span class="a-nav__count" data-count="volunteers">0</span>
+      </button>
+      <button class="a-nav__link" type="button" data-view="users" data-admin-only>
+        <span class="a-nav__icon a-nav__icon--users" aria-hidden="true"></span> Users
+        <span class="a-nav__count" data-count="users">0</span>
+      </button>
+      <button class="a-nav__link" type="button" data-view="registrations">
+        <span class="a-nav__icon a-nav__icon--rsvp" aria-hidden="true"></span> Registrations
+      </button>
+      <button class="a-nav__link" type="button" data-view="team" data-admin-only>
+        <span class="a-nav__icon a-nav__icon--team" aria-hidden="true"></span> Site roster
+      </button>
+
+      <p class="a-nav__group">System</p>
+      <button class="a-nav__link" type="button" data-view="activity">
+        <span class="a-nav__icon a-nav__icon--activity" aria-hidden="true"></span> Activity
+      </button>
+      <button class="a-nav__link" type="button" data-view="settings">
+        <span class="a-nav__icon a-nav__icon--settings" aria-hidden="true"></span> Settings
+      </button>
+      <a class="a-nav__link" href="index.html" target="_blank" rel="noopener">
+        <span class="a-nav__icon a-nav__icon--site" aria-hidden="true"></span> View live site
+      </a>
+    </nav>
+
+    <div class="a-sidebar__foot">
+      <div class="a-user">
+        <span class="a-avatar" id="me-avatar">—</span>
+        <div class="a-user__text">
+          <p class="a-user__name" id="me-name">Loading…</p>
+          <p class="a-user__role" id="me-role"></p>
+        </div>
+      </div>
+      <button class="a-btn a-btn--ghost a-btn--sm a-btn--block" id="signout"
+              type="button" style="margin-top:12px">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- ===================================================================
+       Main column
+       =================================================================== -->
+  <div class="a-main">
+    <header class="a-topbar">
+      <button class="a-menu-btn" id="menu-btn" type="button" aria-label="Open navigation">
+        <span class="a-menu-btn__icon" aria-hidden="true"></span>
+      </button>
+      <div class="a-topbar__titles">
+        <h1 class="a-topbar__title" id="view-title">Overview</h1>
+        <p class="a-topbar__sub" id="view-sub"></p>
+      </div>
+      <div class="a-topbar__actions" id="view-actions"></div>
+    </header>
+
+    <main class="a-content">
+
+      <!-- ---------- Overview ---------- -->
+      <section class="a-view" id="view-overview">
+        <div class="a-stats" id="stats"></div>
+
+        <div class="a-grid-2">
+          <div class="a-panel">
+            <div class="a-panel__head"><h2 class="a-panel__title">Next up</h2></div>
+            <div class="a-panel__body--flush" id="upcoming-list"></div>
+          </div>
+          <div class="a-panel">
+            <div class="a-panel__head"><h2 class="a-panel__title">Recent activity</h2></div>
+            <div class="a-panel__body--flush" id="activity-preview"></div>
+          </div>
+        </div>
+
+        <div class="a-panel">
+          <div class="a-panel__head">
+            <h2 class="a-panel__title">Most saved events</h2>
+          </div>
+          <div class="a-panel__body" id="popular"></div>
+        </div>
+      </section>
+
+      <!-- ---------- Events ---------- -->
+      <section class="a-view" id="view-events" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <label class="a-search">
+              <span class="a-search__icon" aria-hidden="true"></span>
+              <input type="search" id="events-search" placeholder="Search events" aria-label="Search events" />
+            </label>
+            <select class="a-select" id="events-status" style="width:auto" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select class="a-select" id="events-org" style="width:auto" aria-label="Filter by organisation">
+              <option value="">All organisations</option>
+            </select>
+            <span class="a-toolbar__spacer"></span>
+            <button class="a-btn" type="button" data-action="new-event">New event</button>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr>
+                  <th>Event</th><th>When</th><th>Mode</th><th>Fee</th>
+                  <th>Status</th><th>Saves</th><th>RSVPs</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="events-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Organisations ---------- -->
+      <section class="a-view" id="view-organizations" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <label class="a-search">
+              <span class="a-search__icon" aria-hidden="true"></span>
+              <input type="search" id="orgs-search" placeholder="Search organisations" aria-label="Search organisations" />
+            </label>
+            <span class="a-toolbar__spacer"></span>
+            <button class="a-btn" type="button" data-action="new-org" data-admin-only>New organisation</button>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr><th>Organisation</th><th>Category</th><th>Type</th><th>Events</th><th>Visible</th><th></th></tr>
+              </thead>
+              <tbody id="orgs-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Categories ---------- -->
+      <section class="a-view" id="view-categories" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <p class="a-topbar__sub" style="flex:1;margin:0">
+              These are the filter chips on Discover and the interest chips on the profile card.
+            </p>
+            <button class="a-btn" type="button" data-action="new-category">New category</button>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr><th>Name</th><th>Group</th><th>Slug</th><th>Order</th><th>Active</th><th>Used by</th><th></th></tr>
+              </thead>
+              <tbody id="categories-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Volunteers ---------- -->
+      <section class="a-view" id="view-volunteers" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <label class="a-search">
+              <span class="a-search__icon" aria-hidden="true"></span>
+              <input type="search" id="volunteers-search" placeholder="Search volunteers" aria-label="Search volunteers" />
+            </label>
+            <span class="a-toolbar__spacer"></span>
+            <button class="a-btn" type="button" data-action="invite-volunteer">Add volunteer</button>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr><th>Member</th><th>Role</th><th>Organisation</th><th>Status</th><th>Joined</th><th></th></tr>
+              </thead>
+              <tbody id="volunteers-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Users (the public side, inside the console) ---------- -->
+      <section class="a-view" id="view-users" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <label class="a-search">
+              <span class="a-search__icon" aria-hidden="true"></span>
+              <input type="search" id="users-search" placeholder="Search users" aria-label="Search users" />
+            </label>
+            <span class="a-toolbar__spacer"></span>
+            <button class="a-btn a-btn--ghost a-btn--sm" type="button" data-action="export-users">
+              Export CSV
+            </button>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr><th>User</th><th>Interests</th><th>Saved</th><th>RSVPs</th><th>Status</th><th>Joined</th><th></th></tr>
+              </thead>
+              <tbody id="users-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Registrations ---------- -->
+      <section class="a-view" id="view-registrations" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <select class="a-select" id="reg-event" style="max-width:360px" aria-label="Choose event">
+              <option value="">All events</option>
+            </select>
+            <span class="a-toolbar__spacer"></span>
+            <button class="a-btn a-btn--ghost a-btn--sm" type="button" data-action="export-rsvps">
+              Export CSV
+            </button>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr><th>Attendee</th><th>Event</th><th>Response</th><th>When</th></tr>
+              </thead>
+              <tbody id="registrations-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Site roster (team.html) ---------- -->
+      <section class="a-view" id="view-team" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <p class="a-topbar__sub" style="flex:1;margin:0">
+              The people shown on the public “The Team” page.
+            </p>
+            <button class="a-btn" type="button" data-action="new-team-member">Add member</button>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr><th>Name</th><th>Role</th><th>Order</th><th>Visible</th><th></th></tr>
+              </thead>
+              <tbody id="team-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Activity ---------- -->
+      <section class="a-view" id="view-activity" hidden>
+        <div class="a-panel">
+          <div class="a-panel__head"><h2 class="a-panel__title">Audit trail</h2></div>
+          <div class="a-panel__body--flush" id="activity-rows"></div>
+        </div>
+      </section>
+
+      <!-- ---------- Settings ---------- -->
+      <section class="a-view" id="view-settings" hidden>
+        <div class="a-grid-2">
+
+          <div class="a-panel">
+            <div class="a-panel__head"><h2 class="a-panel__title">Your account</h2></div>
+            <div class="a-panel__body">
+              <form class="a-form" id="account-form">
+                <p class="a-form__error" id="account-error" hidden role="alert"></p>
+                <div class="a-field">
+                  <label class="a-field__label" for="acc-name">Full name</label>
+                  <input class="a-input" id="acc-name" type="text" />
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="acc-email">Email</label>
+                  <input class="a-input" id="acc-email" type="email" disabled />
+                  <span class="a-field__hint">Changing the sign-in email is done in Supabase Auth.</span>
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="acc-phone">Phone</label>
+                  <input class="a-input" id="acc-phone" type="tel" />
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="acc-bio">Bio</label>
+                  <textarea class="a-textarea" id="acc-bio"></textarea>
+                </div>
+                <div>
+                  <button class="a-btn" type="submit">Save profile</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div>
+            <div class="a-panel">
+              <div class="a-panel__head"><h2 class="a-panel__title">Password</h2></div>
+              <div class="a-panel__body">
+                <form class="a-form" id="password-form">
+                  <p class="a-form__error" id="password-error" hidden role="alert"></p>
+                  <div class="a-field">
+                    <label class="a-field__label" for="pw-new">New password</label>
+                    <input class="a-input" id="pw-new" type="password" minlength="8"
+                           autocomplete="new-password" required />
+                  </div>
+                  <div class="a-field">
+                    <label class="a-field__label" for="pw-confirm">Confirm password</label>
+                    <input class="a-input" id="pw-confirm" type="password" minlength="8"
+                           autocomplete="new-password" required />
+                  </div>
+                  <div><button class="a-btn" type="submit">Update password</button></div>
+                </form>
+              </div>
+            </div>
+
+            <div class="a-panel" data-admin-only>
+              <div class="a-panel__head"><h2 class="a-panel__title">Featured event</h2></div>
+              <div class="a-panel__body">
+                <div class="a-form">
+                  <div class="a-field">
+                    <label class="a-field__label" for="featured-select">
+                      Shown in the hero slot on Discover
+                    </label>
+                    <select class="a-select" id="featured-select">
+                      <option value="">None</option>
+                    </select>
+                  </div>
+                  <div><button class="a-btn" type="button" id="featured-save">Set featured</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Generic modal — every editor renders its form into this one shell.
+     ===================================================================== -->
+<div class="a-modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="a-modal__box" id="modal-box">
+    <div class="a-modal__head">
+      <h2 class="a-modal__title" id="modal-title">Edit</h2>
+      <button class="a-modal__close" type="button" id="modal-close" aria-label="Close">
+        <span class="a-modal__close-icon" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div class="a-modal__body" id="modal-body"></div>
+    <div class="a-modal__foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<div class="a-toasts" id="toasts" aria-live="polite"></div>
+
+<script type="module" src="admin.js"></script>
+
+</body>
+</html>
