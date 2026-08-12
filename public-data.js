@@ -177,7 +177,7 @@ const activeChips = new Set();
 async function hydrateDiscover() {
   const [events, categories] = await Promise.all([
     supabase.from('events_public').select('*')
-      .eq('status', 'published').order('starts_at', { ascending: true }),
+      .eq('status', 'published').order('starts_at', { ascending: false }),
     supabase.from('categories').select('*')
       .eq('is_active', true).order('group_name').order('sort_order')
   ]);
@@ -433,7 +433,14 @@ async function hydrateEventDetails() {
     tagRow.innerHTML = event.tags.map((t) => `<span class="chip">${esc(t)}</span>`).join('');
   }
 
-  wireRsvp(event);
+  // A past event is done — nothing left to RSVP to, so the question card
+  // comes off the page instead of asking about an event that already happened.
+  const question = document.querySelector('.question');
+  if (timingOf(event) === 'past') {
+    if (question) question.hidden = true;
+  } else {
+    wireRsvp(event);
+  }
   hydrateMoreEvents(event);
   hydrateFriends(event);
 }
