@@ -129,15 +129,30 @@ create table if not exists public.user_interests (
 
 -- Powers team.html — the public "The Team" roster.
 create table if not exists public.team_members (
-  id            uuid primary key default gen_random_uuid(),
-  name          text not null,
-  role_title    text,
-  photo_url     text,
-  instagram_url text,
-  linkedin_url  text,
-  sort_order    int not null default 0,
-  is_active     boolean not null default true,
-  created_at    timestamptz not null default now()
+  id              uuid primary key default gen_random_uuid(),
+  name            text not null,
+  role_title      text,
+  photo_url       text,
+  instagram_url   text,
+  linkedin_url    text,
+  organization_id uuid references public.organizations(id) on delete set null,
+  sort_order      int not null default 0,
+  is_active       boolean not null default true,
+  created_at      timestamptz not null default now()
+);
+
+-- Added after the initial release — safe to re-run against a database that
+-- already has team_members without it.
+alter table public.team_members
+  add column if not exists organization_id uuid references public.organizations(id) on delete set null;
+
+-- A roster member's picked interests — same shape as user_interests, just
+-- keyed off team_members instead of profiles. Sourced from the same
+-- `categories` table (topic group) as the profile's interest picker.
+create table if not exists public.team_member_interests (
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  category_id    uuid not null references public.categories(id) on delete cascade,
+  primary key (team_member_id, category_id)
 );
 
 create table if not exists public.site_settings (
@@ -162,6 +177,7 @@ create index if not exists events_status_idx      on public.events (status);
 create index if not exists events_org_idx         on public.events (organization_id);
 create index if not exists profiles_role_idx      on public.profiles (role);
 create index if not exists activity_created_idx   on public.activity_log (created_at desc);
+create index if not exists team_members_org_idx   on public.team_members (organization_id);
 
 -- --------------------------------------------------------------------------
 -- 2. Helper functions
@@ -285,6 +301,7 @@ alter table public.event_saves     enable row level security;
 alter table public.event_rsvps     enable row level security;
 alter table public.user_interests  enable row level security;
 alter table public.team_members    enable row level security;
+alter table public.team_member_interests enable row level security;
 alter table public.site_settings   enable row level security;
 alter table public.activity_log    enable row level security;
 
@@ -425,6 +442,16 @@ create policy team_read on public.team_members
 
 drop policy if exists team_write on public.team_members;
 create policy team_write on public.team_members
+  for all using (public.is_admin()) with check (public.is_admin());
+
+-- ---- team_member_interests ------------------------------------------------
+-- Same public/staff split as team_members itself: readable by anyone (they
+-- render on the public roster), writable only by admins.
+drop policy if exists team_interests_read on public.team_member_interests;
+create policy team_interests_read on public.team_member_interests for select using (true);
+
+drop policy if exists team_interests_write on public.team_member_interests;
+create policy team_interests_write on public.team_member_interests
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- ---- site_settings -------------------------------------------------------

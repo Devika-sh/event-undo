@@ -97,7 +97,7 @@ function cardMarkup(event) {
   const tags = (event.tags || []).slice(0, 5);
 
   return `
-  <article class="card" data-event="${esc(event.id)}">
+  <article class="card" data-event="${esc(event.id)}" data-timing="${timingOf(event)}">
     <a class="card__link" href="event-details.html?id=${encodeURIComponent(event.id)}"
        aria-label="View ${title}"></a>
     <div class="card__media">
@@ -325,30 +325,50 @@ async function hydrateOrganizations() {
 
 async function hydrateTeam() {
   const grid = document.querySelector('.team-grid');
-  const { data, error } = await supabase.from('team_members')
-    .select('*').eq('is_active', true).order('sort_order').order('name');
-  if (error || !data?.length) return;
+  const [members, interestRows] = await Promise.all([
+    supabase.from('team_members').select('*, organizations(name)')
+      .eq('is_active', true).order('sort_order').order('name'),
+    supabase.from('team_member_interests').select('team_member_id, categories(name)')
+  ]);
+  if (members.error || !members.data?.length) return;
+
+  const interestsByMember = (interestRows.data || []).reduce((acc, r) => {
+    if (!r.categories?.name) return acc;
+    (acc[r.team_member_id] ||= []).push(r.categories.name);
+    return acc;
+  }, {});
 
   // The static grid opens with a heading card; keep whatever isn't a person.
   const lead = grid.querySelector(':scope > :not(.profile-card)');
-  const cards = data.map((m) => `
+  const cards = members.data.map((m) => {
+    const interests = interestsByMember[m.id] || [];
+    return `
     <article class="profile-card">
       <h2 class="profile-card__name">${esc(m.name)}</h2>
       <div class="profile-card__photo${m.photo_url ? '' : ' profile-card__photo--empty'}">
         ${m.photo_url ? `<img src="${esc(m.photo_url)}" alt="${esc(m.name)}" />` : ''}
       </div>
+      ${m.role_title || m.organizations?.name
+        ? `<p class="profile-card__role">
+             ${m.role_title ? esc(m.role_title) : ''}
+             ${m.organizations?.name
+               ? `<span class="profile-card__org">${esc(m.organizations.name)}</span>`
+               : ''}
+           </p>`
+        : ''}
       <div class="profile-card__socials">
         ${m.instagram_url ? `<a href="${esc(m.instagram_url)}" target="_blank" rel="noopener"
            aria-label="${esc(m.name)} on Instagram"><span class="profile-card__social-icon profile-card__social-icon--instagram icon-mask"></span></a>` : ''}
         ${m.linkedin_url ? `<a href="${esc(m.linkedin_url)}" target="_blank" rel="noopener"
            aria-label="${esc(m.name)} on LinkedIn"><span class="profile-card__social-icon profile-card__social-icon--linkedin icon-mask"></span></a>` : ''}
       </div>
-      ${m.role_title
-        ? `<div class="profile-card__interests" role="group" aria-label="${esc(m.name)}'s role">
-             <span class="chip">${esc(m.role_title)}</span>
+      ${interests.length
+        ? `<div class="profile-card__interests" role="group" aria-label="${esc(m.name)}'s interests">
+             ${interests.map((name) => `<span class="chip chip--selected">${esc(name)}</span>`).join('')}
            </div>`
         : ''}
-    </article>`).join('');
+    </article>`;
+  }).join('');
 
   grid.innerHTML = (lead ? lead.outerHTML : '') + cards;
 }

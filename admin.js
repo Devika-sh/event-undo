@@ -32,6 +32,7 @@ const store = {
   saves: [],
   interests: [],
   team: [],
+  teamInterests: [],
   activity: []
 };
 
@@ -1452,13 +1453,21 @@ function renderRegistrations() {
    ========================================================================== */
 
 async function loadTeam() {
-  $('#team-rows').innerHTML = skeletonRows(5);
-  const { data, error } = await supabase.from('team_members')
-    .select('*').order('sort_order').order('name');
-  if (error) { fail(error, 'loading the roster'); return; }
-  store.team = data || [];
+  $('#team-rows').innerHTML = skeletonRows(7);
+  const [members, interests] = await Promise.all([
+    supabase.from('team_members').select('*, organizations(name)').order('sort_order').order('name'),
+    supabase.from('team_member_interests').select('team_member_id, categories(name)')
+  ]);
+  if (members.error) { fail(members.error, 'loading the roster'); return; }
+  store.team = members.data || [];
+  store.teamInterests = interests.data || [];
 
-  $('#team-rows').innerHTML = store.team.length ? store.team.map((m) => `
+  $('#team-rows').innerHTML = store.team.length ? store.team.map((m) => {
+    const tags = store.teamInterests
+      .filter((i) => i.team_member_id === m.id)
+      .map((i) => i.categories?.name)
+      .filter(Boolean);
+    return `
     <tr>
       <td>
         <div class="a-cell-media">
@@ -1467,6 +1476,11 @@ async function loadTeam() {
         </div>
       </td>
       <td>${esc(m.role_title || '—')}</td>
+      <td>${m.organizations?.name ? `<span class="a-badge a-badge--soft">${esc(m.organizations.name)}</span>` : '—'}</td>
+      <td>${tags.length
+            ? `<div class="a-tag-row">${tags.slice(0, 3).map((t) => `<span class="chip">${esc(t)}</span>`).join('')}${
+                tags.length > 3 ? `<span class="a-cell-sub">+${tags.length - 3}</span>` : ''}</div>`
+            : '<span class="a-cell-sub">None picked</span>'}</td>
       <td>${m.sort_order}</td>
       <td>${m.is_active
             ? '<span class="a-badge a-badge--live">visible</span>'
@@ -1481,12 +1495,32 @@ async function loadTeam() {
             <span class="a-icon-btn__glyph a-icon-btn__glyph--delete"></span></button>
         </div>
       </td>
-    </tr>`).join('')
-    : emptyRow(5, 'Roster is empty', 'Add the people who should appear on The Team page.');
+    </tr>`;
+  }).join('')
+    : emptyRow(7, 'Roster is empty', 'Add the people who should appear on The Team page.');
 }
 
-function openTeamEditor(id) {
+/** The roster's interest chips are sourced from the same place the profile
+ *  picker uses — the 'topic' group in Categories — so "an interest" means
+ *  the same thing everywhere in the app. */
+async function openTeamEditor(id) {
   const m = store.team.find((x) => x.id === id) || {};
+  const topics = store.categories.filter((c) => c.group_name === 'topic' && c.is_active);
+
+  // store.teamInterests (from loadTeam) only carries the category name, not
+  // its id — fetch the id set fresh so the picker can pre-select correctly.
+  const mine = new Set();
+  if (id) {
+    const { data } = await supabase.from('team_member_interests')
+      .select('category_id').eq('team_member_id', id);
+    (data || []).forEach((r) => mine.add(r.category_id));
+  }
+
+  const orgOptions = store.orgs.map((o) =>
+    `<option value="${esc(o.id)}"${m.organization_id === o.id ? ' selected' : ''}>${esc(o.name)}</option>`).join('');
+  const chips = topics.map((c) => `
+    <button class="chip${mine.has(c.id) ? ' chip--selected' : ''}" type="button"
+            data-cat="${esc(c.id)}">${esc(c.name)}</button>`).join('');
 
   openModal({
     title: id ? 'Edit member' : 'Add member',
@@ -1503,6 +1537,13 @@ function openTeamEditor(id) {
         <input class="a-input" id="tm-role" value="${esc(m.role_title || '')}" placeholder="Design Lead" />
       </div>
       <div class="a-field">
+        <label class="a-field__label" for="tm-org">Organisation</label>
+        <select class="a-select" id="tm-org">
+          <option value="">None</option>${orgOptions}
+        </select>
+        <span class="a-field__hint">Shown as a highlighted badge on their public card.</span>
+      </div>
+      <div class="a-field">
         <label class="a-field__label" for="tm-photo">Photo URL</label>
         <input class="a-input" id="tm-photo" value="${esc(m.photo_url || '')}" />
       </div>
@@ -1517,6 +1558,11 @@ function openTeamEditor(id) {
         </div>
       </div>
       <div class="a-field">
+        <span class="a-field__label">Interests</span>
+        <div class="a-chips" id="tm-interests">${chips}</div>
+        <span class="a-field__hint">Pulled from the Categories "topic" group.</span>
+      </div>
+      <div class="a-field">
         <label class="a-field__label" for="tm-order">Sort order</label>
         <input class="a-input" id="tm-order" type="number" value="${esc(m.sort_order ?? 0)}" />
       </div>
@@ -1528,6 +1574,11 @@ function openTeamEditor(id) {
         </label>
       </div>
     </form>`,
+    onMount: (body) => {
+      body.querySelectorAll('#tm-interests .chip').forEach((chip) => {
+        chip.addEventListener('click', () => chip.classList.toggle('chip--selected'));
+      });
+    },
     actions: [
       { label: 'Cancel', variant: 'ghost', onClick: closeModal },
       { label: id ? 'Save' : 'Add', onClick: (btn) => saveTeamMember(id, btn) }
@@ -1544,6 +1595,7 @@ async function saveTeamMember(id, btn) {
   const payload = {
     name,
     role_title: $('#tm-role').value.trim() || null,
+    organization_id: $('#tm-org').value || null,
     photo_url: $('#tm-photo').value.trim() || null,
     instagram_url: $('#tm-instagram').value.trim() || null,
     linkedin_url: $('#tm-linkedin').value.trim() || null,
@@ -1551,11 +1603,26 @@ async function saveTeamMember(id, btn) {
     is_active: $('#tm-active').checked
   };
 
-  const { error } = id
-    ? await supabase.from('team_members').update(payload).eq('id', id)
-    : await supabase.from('team_members').insert(payload);
+  let memberId = id;
+  let error;
+  if (id) {
+    ({ error } = await supabase.from('team_members').update(payload).eq('id', id));
+  } else {
+    const res = await supabase.from('team_members').insert(payload).select('id').single();
+    error = res.error;
+    memberId = res.data?.id;
+  }
 
   if (error) { setError('team-error', error.message); btn.disabled = false; return; }
+
+  // Same wholesale-replace approach as an event's category tags — the join
+  // table is tiny, so diffing isn't worth the extra code.
+  const chosen = $$('#tm-interests .chip--selected').map((c) => c.dataset.cat);
+  await supabase.from('team_member_interests').delete().eq('team_member_id', memberId);
+  if (chosen.length) {
+    await supabase.from('team_member_interests')
+      .insert(chosen.map((category_id) => ({ team_member_id: memberId, category_id })));
+  }
 
   closeModal();
   toast('Roster updated', 'success');
