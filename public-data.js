@@ -415,13 +415,18 @@ function clearEventSkeletons(message) {
   if (question) question.hidden = true;
 }
 
-/** Label reflects what the button will actually do for the choice that's
- *  selected right now, so "Register Now" never appears next to "No". */
+/** Label (and the trailing redirect arrow) reflect what the button will
+ *  actually do for the choice that's selected right now — "Register Now"
+ *  never appears next to "No", and neither does the arrow that implies a
+ *  redirect is about to happen. */
 function updateCtaLabel(submit, choiceValue, hasExternalLink) {
   const label = choiceValue === 'yes' && hasExternalLink ? 'Register Now'
     : choiceValue === 'yes' ? "I'm going"
     : 'Save response';
   submit.firstChild.textContent = label + ' ';
+
+  const icon = submit.querySelector('.btn-cta__icon');
+  if (icon) icon.hidden = choiceValue !== 'yes';
 }
 
 async function wireRsvp(event) {
@@ -505,8 +510,15 @@ async function hydrateFriends(event) {
 }
 
 async function hydrateMoreEvents(event) {
+  const section = document.querySelector('.more-events');
   const track = document.querySelector('.more-events__track');
-  if (!track || !event.organization_id) return;
+  if (!section || !track) return;
+
+  // Hidden the moment we know we're hydrating live data, so the four static
+  // placeholder cards (unrelated events, not from this organiser) never
+  // flash before the real check for "anything else on?" resolves.
+  section.hidden = true;
+  if (!event.organization_id) return;
 
   const { data } = await supabase.from('events_public').select('*')
     .eq('status', 'published')
@@ -515,11 +527,14 @@ async function hydrateMoreEvents(event) {
     .order('starts_at', { ascending: true })
     .limit(8);
 
+  // No other events from this organiser — skip the section entirely rather
+  // than show cards that don't belong to it.
   if (!data?.length) return;
 
   const heading = document.querySelector('.more-events__title');
   if (heading) heading.textContent = `More Events from ${event.organizer || 'this organiser'}`;
   track.innerHTML = data.map(cardMarkup).join('');
+  section.hidden = false;
 }
 
 /* ==========================================================================
