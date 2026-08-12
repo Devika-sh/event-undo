@@ -504,9 +504,10 @@ body.is-scrolled .navbar {
   border-radius: inherit;
 }
 
-/* Card / hover — bg-hover as a subtle surface cue; border stays border-brand.
-   Only cards that lead somewhere react, so a static placeholder stays inert. */
-.card:has(.card__link):hover { background: var(--bg-hover); }
+/* Card hover leaves the card itself untouched — only its tag chips pick up
+   the same bg-hover cue .chip:hover already uses elsewhere, so hovering the
+   card reads as "these chips are interactive" rather than recoloring the card. */
+.card:has(.card__link):hover .card__tags .chip { background: var(--bg-hover); }
 
 /* --- 1. Media block (Image / Card variant) --- */
 
