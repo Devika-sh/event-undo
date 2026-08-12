@@ -4,16 +4,15 @@
    Hydrates the marketing pages from the same tables the admin console writes
    to, and lets a signed-in user save events, RSVP, and pick interests.
 
-   Progressive enhancement on purpose: if supabase-config.js still holds the
-   placeholders, or a table comes back empty, the page keeps the static markup
-   it shipped with. Nothing here removes content without having something real
-   to put in its place.
+   Every list ships as skeleton markup and stays that way until this file has
+   real rows to put in its place. Nothing is ever rendered from a cache or
+   from demo copy — a shimmer means "still loading", and the only thing that
+   replaces it is live data or an explicit "nothing here" message.
    ========================================================================== */
 
 import {
   supabase, isConfigured, getSession, isStaff,
-  formatDate, formatTime, formatFee, esc, initials, timingOf,
-  cacheGet, cacheSet
+  formatDate, formatTime, formatFee, esc, initials, timingOf
 } from './supabase-client.js';
 import { initDropzones, resetDropzone } from './dropzone.js';
 // Side-effect only: wires every .a-select into the custom dropdown once it's
@@ -21,9 +20,36 @@ import { initDropzones, resetDropzone } from './dropzone.js';
 import './dropdown.js';
 
 if (isConfigured) init();
+else showUnavailable('This section isn’t available right now.');
 
 let me = null;             // auth user, or null
 let savedIds = new Set();  // event ids this user has hearted
+
+/** Clears every skeleton region on the page and says why it's empty. Runs when
+ *  the backend can't be reached at all (supabase-config.js still holds the
+ *  placeholder keys), so nothing below would ever fire — a skeleton must never
+ *  be left shimmering with no request behind it. */
+function showUnavailable(message) {
+  const note = `<p class="eu-empty">${esc(message)}</p>`;
+
+  ['.event-grid', '.org-list', '.team-grid', '.events-fan'].forEach((sel) => {
+    const region = document.querySelector(sel);
+    if (!region) return;
+    region.removeAttribute('aria-busy');
+    region.innerHTML = note;
+  });
+
+  ['.filters__set', '.org-filters'].forEach((sel) => {
+    const row = document.querySelector(sel);
+    if (!row) return;
+    row.removeAttribute('aria-busy');
+    row.innerHTML = '';
+  });
+
+  document.querySelector('.featured')?.setAttribute('hidden', '');
+  document.querySelector('.profile-card')?.removeAttribute('data-loading');
+  if (document.querySelector('.event-head')) clearEventSkeletons(message);
+}
 
 async function init() {
   const session = await getSession();
@@ -211,16 +237,6 @@ async function hydrateDiscover() {
   const search = document.querySelector('.search-bar__input');
   if (search) search.addEventListener('input', renderGrid);
 
-  // Stale-while-revalidate: a cached list (if any) paints instantly — no
-  // spinner needed — then the live fetch below replaces it once it lands.
-  const cached = cacheGet('discover');
-  if (cached?.events?.length) {
-    allEvents = cached.events;
-    if (cached.categories?.length) buildFilters(cached.categories);
-    hydrateFeatured();
-    renderGrid();
-  }
-
   const [events, categories] = await Promise.all([
     supabase.from('events_public').select('*')
       .eq('status', 'published').order('starts_at', { ascending: false }),
@@ -228,19 +244,42 @@ async function hydrateDiscover() {
       .eq('is_active', true).order('group_name').order('sort_order')
   ]);
 
-  if (events.error || !events.data?.length) return;   // keep the cached/static grid
-  allEvents = events.data;
+  // Skeletons have been on screen until now; from here on the page shows
+  // either real events or an explicit reason there aren't any.
+  if (events.error) { clearDiscoverSkeletons('Events couldn’t be loaded right now.'); return; }
+  if (!events.data.length) { clearDiscoverSkeletons('No events have been published yet.'); return; }
 
-  if (categories.data?.length) buildFilters(categories.data);
+  allEvents = events.data;
+  buildFilters(categories.data || []);
   hydrateFeatured();
   renderGrid();
+}
 
-  cacheSet('discover', { events: events.data, categories: categories.data || [] });
+/** Nothing to show on Discover — drop the skeleton grid, the skeleton chip
+ *  row and the skeleton hero rather than leaving any of them shimmering. */
+function clearDiscoverSkeletons(message) {
+  const grid = document.querySelector('.event-grid');
+  if (grid) {
+    grid.removeAttribute('aria-busy');
+    grid.innerHTML = `<p class="eu-empty">${esc(message)}</p>`;
+  }
+
+  const set = document.querySelector('.filters__set');
+  if (set) { set.removeAttribute('aria-busy'); set.innerHTML = ''; }
+
+  const featured = document.querySelector('.featured');
+  if (featured) featured.hidden = true;
 }
 
 function hydrateFeatured() {
+  const section = document.querySelector('.featured');
   const featured = allEvents.find((e) => e.is_featured) || allEvents[0];
-  if (!featured) return;
+  // No event to feature — the hero comes off the page rather than sitting
+  // there as a shimmer with nothing behind it.
+  if (!featured) { if (section) section.hidden = true; return; }
+
+  // Swaps the skeleton hero for the real one now that there's something to show.
+  if (section) section.removeAttribute('data-loading');
 
   const title = document.querySelector('.featured__title');
   const photo = document.querySelector('.featured__photo');
@@ -257,7 +296,6 @@ function hydrateFeatured() {
   // grid's own .card__link, sitting under the "View event" button (desktop
   // only; hidden on mobile, see styles.css) so the button keeps its own hit
   // target instead of double-handling the click.
-  const section = document.querySelector('.featured');
   if (section) {
     let cardLink = section.querySelector('.featured__card-link');
     if (!cardLink) {
@@ -287,6 +325,7 @@ function hydrateFeatured() {
 function buildFilters(categories) {
   const set = document.querySelector('.filters__set');
   if (!set) return;
+  set.removeAttribute('aria-busy');   // skeleton chips are about to be replaced
 
   const order = ['mode', 'timing', 'organiser', 'topic'];
   const groups = order
@@ -300,11 +339,6 @@ function buildFilters(categories) {
                 data-slug="${esc(c.slug)}">${esc(c.name)}</button>`).join('')}
     </div>`).join('<span class="filters__dot" aria-hidden="true"></span>');
 
-  // Cache-then-network can call this twice (cached paint, then the live
-  // fetch) — innerHTML above rebuilds the chips either way, but the listener
-  // is on the container, so guard against binding it a second time.
-  if (set.dataset.wired) return;
-  set.dataset.wired = '1';
   set.addEventListener('click', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
@@ -317,6 +351,7 @@ function buildFilters(categories) {
 
 function renderGrid() {
   const grid = document.querySelector('.event-grid');
+  grid.removeAttribute('aria-busy');   // skeleton cards are about to be replaced
   const term = (document.querySelector('.search-bar__input')?.value || '').trim().toLowerCase();
 
   // Chips within a group are OR'd; across groups they're AND'd — picking
@@ -355,19 +390,23 @@ function renderGrid() {
    ========================================================================== */
 
 async function hydrateOrganizations() {
-  const cached = cacheGet('organizations');
-  if (cached?.length) renderOrgs(cached);
-
+  const list = document.querySelector('.org-list');
   const { data, error } = await supabase.from('organizations')
     .select('*').eq('is_active', true).order('name');
-  if (error || !data?.length) return;   // keep the cached/static grid
 
-  renderOrgs(data);
-  cacheSet('organizations', data);
-}
+  // Skeletons come off here either way — replaced by real cards, or by the
+  // reason there aren't any.
+  list.removeAttribute('aria-busy');
 
-function renderOrgs(data) {
-  const list = document.querySelector('.org-list');
+  if (error || !data?.length) {
+    const bar = document.querySelector('.org-filters');
+    if (bar) { bar.removeAttribute('aria-busy'); bar.innerHTML = ''; }
+    list.innerHTML = `<p class="eu-empty">${
+      error ? 'Organizations couldn’t be loaded right now.' : 'No organizations have been added yet.'
+    }</p>`;
+    return;
+  }
+
   buildOrgFilters(data);
 
   list.innerHTML = data.map((org) => {
@@ -413,6 +452,7 @@ function renderOrgs(data) {
 function buildOrgFilters(orgs) {
   const bar = document.querySelector('.org-filters');
   if (!bar) return;
+  bar.removeAttribute('aria-busy');   // skeleton chips are about to be replaced
 
   const types = [...new Set(orgs.map((o) => o.type).filter(Boolean))].sort();
   bar.innerHTML = types.map((t) => `
@@ -425,15 +465,21 @@ function buildOrgFilters(orgs) {
    ========================================================================== */
 
 async function hydrateTeam() {
-  const cached = cacheGet('team');
-  if (cached?.members?.length) renderTeam(cached.members, cached.interestsByMember);
-
+  const grid = document.querySelector('.team-grid');
   const [members, interestRows] = await Promise.all([
     supabase.from('team_members').select('*, organizations(name)')
       .eq('is_active', true).order('sort_order').order('name'),
     supabase.from('team_member_interests').select('team_member_id, categories(name)')
   ]);
-  if (members.error || !members.data?.length) return;   // keep the cached/static grid
+
+  grid.removeAttribute('aria-busy');
+
+  if (members.error || !members.data?.length) {
+    grid.innerHTML = `<p class="eu-empty">${
+      members.error ? 'The team couldn’t be loaded right now.' : 'The team roster is being put together.'
+    }</p>`;
+    return;
+  }
 
   const interestsByMember = (interestRows.data || []).reduce((acc, r) => {
     if (!r.categories?.name) return acc;
@@ -441,15 +487,7 @@ async function hydrateTeam() {
     return acc;
   }, {});
 
-  renderTeam(members.data, interestsByMember);
-  cacheSet('team', { members: members.data, interestsByMember });
-}
-
-function renderTeam(membersData, interestsByMember) {
-  const grid = document.querySelector('.team-grid');
-  // The static grid opens with a heading card; keep whatever isn't a person.
-  const lead = grid.querySelector(':scope > :not(.profile-card)');
-  const cards = membersData.map((m) => {
+  grid.innerHTML = members.data.map((m) => {
     const interests = interestsByMember[m.id] || [];
     return `
     <article class="profile-card">
@@ -478,8 +516,6 @@ function renderTeam(membersData, interestsByMember) {
         : ''}
     </article>`;
   }).join('');
-
-  grid.innerHTML = (lead ? lead.outerHTML : '') + cards;
 }
 
 /* ==========================================================================
@@ -504,6 +540,7 @@ async function hydrateEventDetails() {
   if (banner) {
     banner.src = event.banner_url || FALLBACK_IMAGE;
     banner.alt = event.title;
+    banner.closest('.banner')?.removeAttribute('data-loading');
   }
 
   // Meta rows ship in a fixed order: date, time, venue, cost.
@@ -519,9 +556,12 @@ async function hydrateEventDetails() {
   const about = document.querySelector('.about__text');
   if (about) about.textContent = event.description || event.summary || 'Details coming soon.';
 
+  // Written unconditionally: an event with no tags clears the skeleton chips
+  // rather than leaving them shimmering over a row that will never fill.
   const tagRow = document.querySelector('.about__tags');
-  if (tagRow && event.tags?.length) {
-    tagRow.innerHTML = event.tags.map((t) => `<span class="chip">${esc(t)}</span>`).join('');
+  if (tagRow) {
+    tagRow.innerHTML = (event.tags || [])
+      .map((t) => `<span class="chip">${esc(t)}</span>`).join('');
   }
 
   // A past event is done — nothing left to RSVP to, so the question card
@@ -539,6 +579,7 @@ async function hydrateEventDetails() {
 /** Fetch failed / no id in the URL — clear every skeleton with a plain
  *  message instead of leaving the shimmer spinning forever. */
 function clearEventSkeletons(message) {
+  document.querySelector('.banner')?.removeAttribute('data-loading');
   const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
   set('.event-head__title', message);
   set('.event-head__org', '');
@@ -704,18 +745,24 @@ async function hydrateProfile() {
   paintInterests(topics, mine);
   wireProfileEdit(profile.data, topics, mine, orgList);
 
-  // Saved + upcoming events replace the placeholder fan.
+  // Saved events replace the skeleton fan. Every branch below writes to it,
+  // so the shimmer can't outlive the fetch even when nothing comes back.
   const fan = document.querySelector('.events-fan');
-  const savedEventIds = (saves.data || []).map((s) => s.event_id);
-  if (fan && savedEventIds.length) {
-    savedIds = new Set(savedEventIds);
-    const { data } = await supabase.from('events_public').select('*')
-      .in('id', savedEventIds).eq('status', 'published')
-      .order('starts_at', { ascending: true });
-    if (data?.length) fan.innerHTML = data.map(cardMarkup).join('');
-  } else if (fan) {
-    fan.innerHTML = `<p class="event-grid__empty">
-      Nothing saved yet — tap the heart on an event to keep it here.</p>`;
+  if (fan) {
+    fan.removeAttribute('aria-busy');
+    const savedEventIds = (saves.data || []).map((s) => s.event_id);
+    let cards = [];
+    if (savedEventIds.length) {
+      savedIds = new Set(savedEventIds);
+      const { data } = await supabase.from('events_public').select('*')
+        .in('id', savedEventIds).eq('status', 'published')
+        .order('starts_at', { ascending: true });
+      cards = data || [];
+    }
+    fan.innerHTML = cards.length
+      ? cards.map(cardMarkup).join('')
+      : `<p class="event-grid__empty">
+           Nothing saved yet — tap the heart on an event to keep it here.</p>`;
   }
 
   addAdminLink(profile.data);
@@ -749,13 +796,26 @@ function addSignOut() {
 }
 
 function paintProfileCard(profile) {
+  // Card ships in its loading state; this is the point real values exist.
+  document.querySelector('.profile-card')?.removeAttribute('data-loading');
+
   const nameEl = document.querySelector('.profile-card__name');
   if (nameEl) nameEl.textContent = profile?.full_name || me.email;
 
   const photo = document.querySelector('.profile-card__photo');
-  if (photo && profile?.avatar_url) {
-    photo.classList.remove('profile-card__photo--empty');
-    photo.innerHTML = `<img src="${esc(profile.avatar_url)}" alt="" />`;
+  if (photo) {
+    if (profile?.avatar_url) {
+      photo.classList.remove('profile-card__photo--empty');
+      photo.innerHTML = `<img src="${esc(profile.avatar_url)}" alt="" />`;
+    } else {
+      // No photo on file — the neutral portrait slot, not a shimmer.
+      photo.classList.add('profile-card__photo--empty');
+      photo.innerHTML = `
+        <svg viewBox="0 0 261 300" role="img" aria-label="No profile photo">
+          <circle cx="130" cy="118" r="52" fill="rgba(255,255,255,0.28)" />
+          <path d="M34 300c0-53 43-96 96-96s96 43 96 96z" fill="rgba(255,255,255,0.28)" />
+        </svg>`;
+    }
   }
 
   // Department/semester + favourite organisation — same badge treatment as

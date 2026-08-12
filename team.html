@@ -87,98 +87,76 @@
   </header>
 
   <!-- ===== The team — a row of Profile Cards (User Profile), one per member.
-             Names, socials and chips below are placeholder content: swap in the
-             real team. ===== -->
-  <section class="team-grid" aria-label="The team behind eventundo">
+       Skeleton cards only: public-data.js#hydrateTeam replaces this whole block
+       with the real `team_members` rows, or with an .eu-empty message when the
+       roster is empty. No name, photo or tag is hardcoded here. ===== -->
+  <section class="team-grid" aria-label="The team behind eventundo" aria-busy="true">
 
-    <!-- Profile Card (User Profile) — name, framed photo, socials, and the
-         member's tags as Filter Chips. The component's Edit Button is omitted:
-         this is a public roster, not the signed-in user's own profile. -->
-    <article class="profile-card">
-      <h2 class="profile-card__name">Aparna Nair</h2>
+    <article class="profile-card profile-card--loading" aria-hidden="true">
+      <h2 class="profile-card__name"><span class="eu-skeleton" style="width:min(100%,150px);height:20px"></span></h2>
 
-      <!-- Placeholder. The design's photo is stock placeholder content and Figma
-           exports it blank, so there is no real asset to pull. Swap in the
-           member's own photo: <img src="…" alt="" width="334" height="476" /> -->
-      <div class="profile-card__photo profile-card__photo--empty">
-        <svg viewBox="0 0 261 300" role="img" aria-label="Profile photo placeholder">
-          <circle cx="130" cy="118" r="52" fill="rgba(255,255,255,0.28)" />
-          <path d="M34 300c0-53 43-96 96-96s96 43 96 96z" fill="rgba(255,255,255,0.28)" />
-        </svg>
-      </div>
+      <div class="profile-card__photo"><span class="eu-skeleton eu-skeleton--fill"></span></div>
 
       <div class="profile-card__socials">
-        <a href="#" aria-label="Aparna Nair on Instagram">
-          <span class="profile-card__social-icon profile-card__social-icon--instagram icon-mask"></span>
-        </a>
-        <a href="#" aria-label="Aparna Nair on LinkedIn">
-          <span class="profile-card__social-icon profile-card__social-icon--linkedin icon-mask"></span>
-        </a>
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
       </div>
 
-      <!-- Filter Chips; click toggles to On Click (selected). -->
-      <div class="profile-card__interests" role="group" aria-label="Aparna Nair's focus areas">
-        <button class="chip" type="button">Product</button>
-        <button class="chip" type="button">Design</button>
-        <button class="chip" type="button">Research</button>
-        <button class="chip" type="button">Workshops</button>
-        <button class="chip" type="button">Community</button>
+      <div class="profile-card__interests">
+        <span class="eu-skeleton eu-skeleton--chip" style="width:72px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:60px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:80px"></span>
       </div>
     </article>
 
-    <article class="profile-card">
-      <h2 class="profile-card__name">Rahul Menon</h2>
+    <article class="profile-card profile-card--loading" aria-hidden="true">
+      <h2 class="profile-card__name"><span class="eu-skeleton" style="width:min(100%,150px);height:20px"></span></h2>
 
-      <div class="profile-card__photo profile-card__photo--empty">
-        <svg viewBox="0 0 261 300" role="img" aria-label="Profile photo placeholder">
-          <circle cx="130" cy="118" r="52" fill="rgba(255,255,255,0.28)" />
-          <path d="M34 300c0-53 43-96 96-96s96 43 96 96z" fill="rgba(255,255,255,0.28)" />
-        </svg>
-      </div>
+      <div class="profile-card__photo"><span class="eu-skeleton eu-skeleton--fill"></span></div>
 
       <div class="profile-card__socials">
-        <a href="#" aria-label="Rahul Menon on Instagram">
-          <span class="profile-card__social-icon profile-card__social-icon--instagram icon-mask"></span>
-        </a>
-        <a href="#" aria-label="Rahul Menon on LinkedIn">
-          <span class="profile-card__social-icon profile-card__social-icon--linkedin icon-mask"></span>
-        </a>
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
       </div>
 
-      <div class="profile-card__interests" role="group" aria-label="Rahul Menon's focus areas">
-        <button class="chip" type="button">Engineering</button>
-        <button class="chip" type="button">Frontend</button>
-        <button class="chip" type="button">Tech Talks</button>
-        <button class="chip" type="button">Hackathons</button>
-        <button class="chip" type="button">Startups</button>
+      <div class="profile-card__interests">
+        <span class="eu-skeleton eu-skeleton--chip" style="width:72px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:60px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:80px"></span>
       </div>
     </article>
 
-    <article class="profile-card">
-      <h2 class="profile-card__name">Sneha Thomas</h2>
+    <article class="profile-card profile-card--loading" aria-hidden="true">
+      <h2 class="profile-card__name"><span class="eu-skeleton" style="width:min(100%,150px);height:20px"></span></h2>
 
-      <div class="profile-card__photo profile-card__photo--empty">
-        <svg viewBox="0 0 261 300" role="img" aria-label="Profile photo placeholder">
-          <circle cx="130" cy="118" r="52" fill="rgba(255,255,255,0.28)" />
-          <path d="M34 300c0-53 43-96 96-96s96 43 96 96z" fill="rgba(255,255,255,0.28)" />
-        </svg>
-      </div>
+      <div class="profile-card__photo"><span class="eu-skeleton eu-skeleton--fill"></span></div>
 
       <div class="profile-card__socials">
-        <a href="#" aria-label="Sneha Thomas on Instagram">
-          <span class="profile-card__social-icon profile-card__social-icon--instagram icon-mask"></span>
-        </a>
-        <a href="#" aria-label="Sneha Thomas on LinkedIn">
-          <span class="profile-card__social-icon profile-card__social-icon--linkedin icon-mask"></span>
-        </a>
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
       </div>
 
-      <div class="profile-card__interests" role="group" aria-label="Sneha Thomas's focus areas">
-        <button class="chip" type="button">Partnerships</button>
-        <button class="chip" type="button">Outreach</button>
-        <button class="chip" type="button">Music</button>
-        <button class="chip" type="button">Culturals</button>
-        <button class="chip" type="button">Media</button>
+      <div class="profile-card__interests">
+        <span class="eu-skeleton eu-skeleton--chip" style="width:72px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:60px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:80px"></span>
+      </div>
+    </article>
+
+    <article class="profile-card profile-card--loading" aria-hidden="true">
+      <h2 class="profile-card__name"><span class="eu-skeleton" style="width:min(100%,150px);height:20px"></span></h2>
+
+      <div class="profile-card__photo"><span class="eu-skeleton eu-skeleton--fill"></span></div>
+
+      <div class="profile-card__socials">
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
+        <span class="eu-skeleton" style="width:22px;height:22px;min-width:0"></span>
+      </div>
+
+      <div class="profile-card__interests">
+        <span class="eu-skeleton eu-skeleton--chip" style="width:72px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:60px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:80px"></span>
       </div>
     </article>
 
@@ -247,12 +225,9 @@
     update();
   })();
 
-  // Filter chips: Default → On Click (selected) → Default
-  document.querySelectorAll('.profile-card__interests .chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      chip.classList.toggle('chip--selected');
-    });
-  });
+  // The interest chips on a roster card are read-only labels rendered by
+  // public-data.js#hydrateTeam from each member's own categories — this is a
+  // public roster, not a filter. Nothing to bind here.
 
   // Mobile menu toggle: hamburger <-> x-close
   (function () {

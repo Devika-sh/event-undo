@@ -81,145 +81,115 @@
            width="428" height="274" />
     </div>
 
-    <!-- Filter Chips — Default state; click toggles to On Click (selected).
-         Static fallback for when Supabase isn't configured; public-data.js
-         rebuilds this row from whatever org `type` values actually exist,
-         so a new type added from the dashboard gets its own chip for free. -->
-    <div class="org-filters" role="group" aria-label="Filter organizations">
-      <button class="chip" type="button" data-type="club">Club</button>
-      <button class="chip" type="button" data-type="organisation">Organisation</button>
+    <!-- Skeleton chips only. public-data.js#buildOrgFilters builds the real row
+         from whatever org `type` values actually exist, so a new type added from
+         the dashboard gets its own chip for free and none are hardcoded here. -->
+    <div class="org-filters" role="group" aria-label="Filter organizations" aria-busy="true">
+      <span class="eu-skeleton eu-skeleton--chip" style="width:62px"></span>
+      <span class="eu-skeleton eu-skeleton--chip" style="width:96px"></span>
     </div>
   </header>
 
-  <!-- ===== Organisation cards ===== -->
-  <section class="org-list" aria-label="Organizations">
+  <!-- ===== Organisation cards =====
+       Skeleton cards only — public-data.js#hydrateOrganizations replaces this
+       whole block with the real `organizations` rows, or with an .eu-empty
+       message when there are none to show. -->
+  <section class="org-list" aria-label="Organizations" aria-busy="true">
 
-    <!-- Org Card 1 -->
-    <article class="org-card" data-type="organisation">
+    <article class="org-card org-card--loading" aria-hidden="true">
       <div class="org-card__profile">
-        <!-- Org Icon slot — swap the initials mark for the org's own logo:
-             <span class="org-logo org-logo--art"><img src="…" alt=""></span> -->
-        <span class="org-logo" aria-hidden="true">CI</span>
-
-        <!-- Groups name+category with socials for the mobile layout only —
-             display:contents at desktop, so nothing here changes above 720px. -->
+        <span class="org-logo org-logo--art"><span class="eu-skeleton eu-skeleton--fill"></span></span>
         <div class="org-card__identity-col">
-          <!-- Organisation Details (Category-Info) -->
           <div class="org-identity">
-            <h2 class="org-identity__name">Catalyst IEDC</h2>
-            <p class="org-identity__category">Innovation &amp; Entrepreneurship</p>
+            <span class="eu-skeleton" style="width:min(100%,240px);height:32px"></span>
+            <span class="eu-skeleton" style="width:min(100%,180px)"></span>
           </div>
-
           <div class="org-socials">
-            <a href="#" aria-label="Catalyst IEDC on Instagram">
-              <span class="org-socials__icon org-socials__icon--instagram icon-mask"></span>
-            </a>
-            <a href="#" aria-label="Catalyst IEDC on LinkedIn">
-              <span class="org-socials__icon org-socials__icon--linkedin icon-mask"></span>
-            </a>
-            <a href="#" aria-label="Catalyst IEDC website">
-              <span class="org-socials__icon org-socials__icon--website icon-mask"></span>
-            </a>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
           </div>
         </div>
       </div>
 
       <div class="org-card__about">
-        <span class="chip org-card__type-chip">Organisation</span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:88px"></span>
         <div class="org-card__about-copy">
           <p>
-            Catalyst is the Innovation and Entrepreneurship Development Cell at Mar Baselios
-            College of Engineering and Technology. It exists to turn half-formed student ideas
-            into things that ship — products, prototypes, and the occasional company.
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="width:70%"></span>
           </p>
           <p>
-            Through Evening Cafe meetups, pitch nights, bootcamps and a year-round mentor
-            network, Catalyst has backed more than sixty student teams and runs the campus
-            pre-incubation programme with the Kerala Startup Mission.
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="width:55%"></span>
           </p>
         </div>
       </div>
     </article>
 
-    <!-- Org Card 2 -->
-    <article class="org-card" data-type="club">
+    <article class="org-card org-card--loading" aria-hidden="true">
       <div class="org-card__profile">
-        <span class="org-logo" aria-hidden="true">µL</span>
-
+        <span class="org-logo org-logo--art"><span class="eu-skeleton eu-skeleton--fill"></span></span>
         <div class="org-card__identity-col">
           <div class="org-identity">
-            <h2 class="org-identity__name">MuLearn MBCET</h2>
-            <p class="org-identity__category">Peer Learning Community</p>
+            <span class="eu-skeleton" style="width:min(100%,240px);height:32px"></span>
+            <span class="eu-skeleton" style="width:min(100%,180px)"></span>
           </div>
-
           <div class="org-socials">
-            <a href="#" aria-label="MuLearn MBCET on Instagram">
-              <span class="org-socials__icon org-socials__icon--instagram icon-mask"></span>
-            </a>
-            <a href="#" aria-label="MuLearn MBCET on LinkedIn">
-              <span class="org-socials__icon org-socials__icon--linkedin icon-mask"></span>
-            </a>
-            <a href="#" aria-label="MuLearn MBCET website">
-              <span class="org-socials__icon org-socials__icon--website icon-mask"></span>
-            </a>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
           </div>
         </div>
       </div>
 
       <div class="org-card__about">
-        <span class="chip org-card__type-chip">Club</span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:88px"></span>
         <div class="org-card__about-copy">
           <p>
-            MuLearn is a peer-to-peer learning community where students pick an interest group,
-            set their own pace, and learn in the open. No lectures, no attendance registers —
-            just a circle that keeps showing up for each other.
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="width:70%"></span>
           </p>
           <p>
-            The campus chapter runs weekly interest-group sessions across web development,
-            design, cybersecurity and AI, plus Learning Fests and hackathons that connect
-            members to the wider MuLearn network across Kerala.
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="width:55%"></span>
           </p>
         </div>
       </div>
     </article>
 
-    <!-- Org Card 3 -->
-    <article class="org-card" data-type="organisation">
+    <article class="org-card org-card--loading" aria-hidden="true">
       <div class="org-card__profile">
-        <span class="org-logo" aria-hidden="true">IEEE</span>
-
+        <span class="org-logo org-logo--art"><span class="eu-skeleton eu-skeleton--fill"></span></span>
         <div class="org-card__identity-col">
           <div class="org-identity">
-            <h2 class="org-identity__name">IEEE SB MBCET</h2>
-            <p class="org-identity__category">Technical Chapter</p>
+            <span class="eu-skeleton" style="width:min(100%,240px);height:32px"></span>
+            <span class="eu-skeleton" style="width:min(100%,180px)"></span>
           </div>
-
           <div class="org-socials">
-            <a href="#" aria-label="IEEE SB MBCET on Instagram">
-              <span class="org-socials__icon org-socials__icon--instagram icon-mask"></span>
-            </a>
-            <a href="#" aria-label="IEEE SB MBCET on LinkedIn">
-              <span class="org-socials__icon org-socials__icon--linkedin icon-mask"></span>
-            </a>
-            <a href="#" aria-label="IEEE SB MBCET website">
-              <span class="org-socials__icon org-socials__icon--website icon-mask"></span>
-            </a>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
+            <span class="eu-skeleton" style="width:17px;height:17px;min-width:0"></span>
           </div>
         </div>
       </div>
 
       <div class="org-card__about">
-        <span class="chip org-card__type-chip">Organisation</span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:88px"></span>
         <div class="org-card__about-copy">
           <p>
-            The IEEE Student Branch is the college's technical chapter, affiliated to the
-            world's largest professional body for engineers. It runs the societies — Computer,
-            Power &amp; Energy, WIE — that give students somewhere specific to go deep.
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="width:70%"></span>
           </p>
           <p>
-            Expect paper presentations, standards workshops, industrial visits and the annual
-            technical symposium, alongside volunteering opportunities that carry across every
-            IEEE section in the country.
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="margin-bottom:8px"></span>
+            <span class="eu-skeleton" style="width:55%"></span>
           </p>
         </div>
       </div>

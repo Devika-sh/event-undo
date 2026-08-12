@@ -128,30 +128,6 @@ export function initials(name) {
     .map((w) => w[0]).join('').toUpperCase();
 }
 
-/* ---------- local cache -----------------------------------------------
-   Stale-while-revalidate for the read-only public pages: render whatever's
-   cached instantly (no spinner needed), then let the live Supabase fetch
-   replace it in the background. Namespaced and versioned so a schema/shape
-   change on our end can't hand old code a cache it doesn't understand. */
-const CACHE_VERSION = 'v1';
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;   // stale after a day; still usable, just not trusted for long
-
-export function cacheGet(key) {
-  try {
-    const raw = localStorage.getItem(`eventundo:${CACHE_VERSION}:${key}`);
-    if (!raw) return null;
-    const { data, savedAt } = JSON.parse(raw);
-    if (Date.now() - savedAt > CACHE_TTL_MS) return null;
-    return data;
-  } catch { return null; }
-}
-
-export function cacheSet(key, data) {
-  try {
-    localStorage.setItem(`eventundo:${CACHE_VERSION}:${key}`, JSON.stringify({ data, savedAt: Date.now() }));
-  } catch { /* private mode / quota — cache is a nicety, not a requirement */ }
-}
-
 /** Derives the timing bucket a filter chip like "Upcoming" matches. */
 export function timingOf(event) {
   const now = Date.now();

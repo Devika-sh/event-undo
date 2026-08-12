@@ -162,8 +162,11 @@
   <div class="profile-row">
 
     <!-- Profile Card (User Profile) — Edit Button, name, framed photo,
-         socials, and the user's interests as Filter Chips. -->
-    <section class="profile-card" aria-label="Your profile">
+         socials, and the user's interests as Filter Chips.
+         Ships in its loading state: every value below is a skeleton until
+         public-data.js#paintProfileCard has the signed-in user's own row (it
+         drops data-loading). Nothing here is demo content. -->
+    <section class="profile-card" aria-label="Your profile" data-loading>
       <div class="profile-card__top">
         <!-- Edit Button — Default; click toggles to the active/editing state. -->
         <button class="edit-btn" type="button" aria-pressed="false" aria-label="Edit profile">
@@ -171,39 +174,21 @@
         </button>
       </div>
 
-      <h2 class="profile-card__name">Lionel Messi</h2>
+      <h2 class="profile-card__name"><span class="eu-skeleton" style="width:min(100%,170px);height:20px"></span></h2>
 
-      <!-- Placeholder. The design's photo is stock placeholder content and Figma
-           exports it blank, so there is no real asset to pull. Swap in the user's
-           own photo: <img src="…" alt="" width="334" height="476" /> -->
-      <div class="profile-card__photo profile-card__photo--empty">
-        <svg viewBox="0 0 261 300" role="img" aria-label="Profile photo placeholder">
-          <circle cx="130" cy="118" r="52" fill="rgba(255,255,255,0.28)" />
-          <path d="M34 300c0-53 43-96 96-96s96 43 96 96z" fill="rgba(255,255,255,0.28)" />
-        </svg>
-      </div>
+      <!-- Filled by paintProfileCard with the user's photo, or with the neutral
+           portrait placeholder when they haven't uploaded one. -->
+      <div class="profile-card__photo"></div>
 
       <!-- Department / semester line + favourite organisation badge. Empty
            until the user fills them in via the edit pop-up. -->
       <p class="profile-card__role" id="profile-role" hidden></p>
 
-      <div class="profile-card__socials">
-        <a href="#" aria-label="Lionel Messi on Instagram">
-          <span class="profile-card__social-icon profile-card__social-icon--instagram icon-mask"></span>
-        </a>
-        <a href="#" aria-label="Lionel Messi on LinkedIn">
-          <span class="profile-card__social-icon profile-card__social-icon--linkedin icon-mask"></span>
-        </a>
-      </div>
+      <!-- Only the socials the user actually filled in are rendered here. -->
+      <div class="profile-card__socials" hidden></div>
 
-      <!-- Interests — Filter Chips; click toggles to On Click (selected). -->
-      <div class="profile-card__interests" role="group" aria-label="Interests">
-        <button class="chip" type="button">Music</button>
-        <button class="chip" type="button">Workshops</button>
-        <button class="chip" type="button">Football</button>
-        <button class="chip" type="button">Startups</button>
-        <button class="chip" type="button">Tech Talks</button>
-      </div>
+      <!-- Interests — Filter Chips, painted from the user's own picks. -->
+      <div class="profile-card__interests" role="group" aria-label="Interests" hidden></div>
     </section>
 
     <!-- Edit pop-up. The Edit Button above opens this over the page; the
@@ -308,106 +293,79 @@
     <section class="events-panel" aria-label="Favored events">
       <h2 class="events-panel__title">Favored Events</h2>
 
-      <div class="events-fan">
+      <!-- Skeleton cards only. public-data.js#hydrateProfile replaces this with
+           the user's actual saved events, or with the "nothing saved yet" note. -->
+      <div class="events-fan" aria-busy="true">
 
-        <article class="card">
-          <div class="card__media">
-            <img class="card__photo" src="Assets/eventundo-fallback.png" alt=""
-                 width="360" height="300" />
-            <div class="card__scrim paint-blur">
-              <p class="card__event-title">Catalyst Evening Cafe</p>
-              <p class="card__organizer">by Catalyst IEDC</p>
-            </div>
-            <!-- Absolute inside the 360x300 media frame at Figma X 312 / Y 14. -->
-            <button class="like-btn" type="button" aria-pressed="false" aria-label="Save Catalyst Evening Cafe">
-              <!-- Untitled UI `heart`, exported vector. 20x20 frame; the glyph is
-                   16.67 x 14.86 and the translate seats it at x=1.67 y=2.5 per the
-                   icon spec. Inlined rather than masked because the Liked state
-                   hides the stroke and fills the shape instead. -->
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <g transform="translate(0.6667 1.5)">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
-                </g>
-              </svg>
-            </button>
-          </div>
+        <article class="card card--loading" aria-hidden="true">
+          <div class="card__media"><span class="eu-skeleton eu-skeleton--fill"></span></div>
           <div class="card__details">
-            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">19th July 2026</span></div>
-            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">6:00 PM</span></div>
-            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">Free</span></div>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:92px;height:14px"></span>
+            </div>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:58px;height:14px"></span>
+            </div>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:46px;height:14px"></span>
+            </div>
+          </div>
+          <div class="card__tags">
+            <span class="eu-skeleton eu-skeleton--chip" style="width:84px"></span>
+            <span class="eu-skeleton eu-skeleton--chip" style="width:64px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:90px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:68px"></span>
           </div>
         </article>
 
-        <article class="card">
-          <div class="card__media">
-            <img class="card__photo" src="Assets/eventundo-fallback.png" alt=""
-                 width="360" height="300" />
-            <div class="card__scrim paint-blur">
-              <p class="card__event-title">Design Jam 3.0</p>
-              <p class="card__organizer">by Design Circle</p>
-            </div>
-            <button class="like-btn" type="button" aria-pressed="false" aria-label="Save Design Jam 3.0">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <g transform="translate(0.6667 1.5)">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
-                </g>
-              </svg>
-            </button>
-          </div>
+        <article class="card card--loading" aria-hidden="true">
+          <div class="card__media"><span class="eu-skeleton eu-skeleton--fill"></span></div>
           <div class="card__details">
-            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">24th July 2026</span></div>
-            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">4:30 PM</span></div>
-            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">₹200</span></div>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:92px;height:14px"></span>
+            </div>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:58px;height:14px"></span>
+            </div>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:46px;height:14px"></span>
+            </div>
+          </div>
+          <div class="card__tags">
+            <span class="eu-skeleton eu-skeleton--chip" style="width:84px"></span>
+            <span class="eu-skeleton eu-skeleton--chip" style="width:64px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:90px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:68px"></span>
           </div>
         </article>
 
-        <article class="card">
-          <div class="card__media">
-            <img class="card__photo" src="Assets/eventundo-fallback.png" alt=""
-                 width="360" height="300" />
-            <div class="card__scrim paint-blur">
-              <p class="card__event-title">Open Mic Night</p>
-              <p class="card__organizer">by Music Club</p>
-            </div>
-            <button class="like-btn" type="button" aria-pressed="false" aria-label="Save Open Mic Night">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <g transform="translate(0.6667 1.5)">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
-                </g>
-              </svg>
-            </button>
-          </div>
+        <article class="card card--loading" aria-hidden="true">
+          <div class="card__media"><span class="eu-skeleton eu-skeleton--fill"></span></div>
           <div class="card__details">
-            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">2nd Aug 2026</span></div>
-            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">7:00 PM</span></div>
-            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">Free</span></div>
-          </div>
-        </article>
-
-        <article class="card">
-          <div class="card__media">
-            <img class="card__photo" src="Assets/eventundo-fallback.png" alt=""
-                 width="360" height="300" />
-            <div class="card__scrim paint-blur">
-              <p class="card__event-title">Founders Meetup</p>
-              <p class="card__organizer">by Startup Cell</p>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:92px;height:14px"></span>
             </div>
-            <button class="like-btn" type="button" aria-pressed="false" aria-label="Save Founders Meetup">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <g transform="translate(0.6667 1.5)">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.32774 2.78172C7.66162 0.833877 4.88324 0.309912 2.7957 2.09355C0.708153 3.8772 0.414256 6.85936 2.05361 8.96888C3.41663 10.7228 7.54159 14.422 8.89353 15.6192C9.04479 15.7532 9.12041 15.8202 9.20863 15.8465C9.28562 15.8694 9.36987 15.8694 9.44686 15.8465C9.53507 15.8202 9.6107 15.7532 9.76195 15.6192C11.1139 14.422 15.2389 10.7228 16.6019 8.96888C18.2412 6.85936 17.9832 3.85843 15.8598 2.09355C13.7364 0.328674 10.9939 0.833877 9.32774 2.78172Z"></path>
-                </g>
-              </svg>
-            </button>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:58px;height:14px"></span>
+            </div>
+            <div class="detail">
+              <span class="eu-skeleton" style="width:30px;height:9px"></span>
+              <span class="eu-skeleton" style="width:46px;height:14px"></span>
+            </div>
           </div>
-          <div class="card__details">
-            <div class="detail"><span class="detail__label">Date</span><span class="detail__value">9th Aug 2026</span></div>
-            <div class="detail"><span class="detail__label">Time</span><span class="detail__value">5:00 PM</span></div>
-            <div class="detail"><span class="detail__label">Fee</span><span class="detail__value">₹150</span></div>
+          <div class="card__tags">
+            <span class="eu-skeleton eu-skeleton--chip" style="width:84px"></span>
+            <span class="eu-skeleton eu-skeleton--chip" style="width:64px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:90px"></span>
+        <span class="eu-skeleton eu-skeleton--chip" style="width:68px"></span>
           </div>
         </article>
 
@@ -486,12 +444,9 @@
     update();
   })();
 
-  // Filter chips: Default → On Click (selected) → Default
-  document.querySelectorAll('.profile-card__interests .chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      chip.classList.toggle('chip--selected');
-    });
-  });
+  // The interests row is read-only: public-data.js#paintInterests renders the
+  // user's actual picks as plain chips, and the edit pop-up is where they get
+  // changed. Nothing to bind here.
 
   // Like button: Default ↔ Liked
   document.querySelectorAll('.like-btn').forEach(function (btn) {
