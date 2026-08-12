@@ -209,6 +209,16 @@
           <span class="a-field__hint">Square images look best.</span>
         </div>
 
+        <!-- Interests. Options come from the categories the dashboard manages,
+             so the chips here and the filter chips on Discover are the same
+             vocabulary. Capped at five — see MAX_INTERESTS in public-data.js. -->
+        <div class="a-field">
+          <span class="a-field__label" id="pe-interests-label">Interests</span>
+          <div class="a-chips" id="pe-interests" role="group"
+               aria-labelledby="pe-interests-label"></div>
+          <span class="a-field__hint" id="pe-interests-count"></span>
+        </div>
+
         <div class="a-field">
           <label class="a-field__label" for="pe-bio">Bio</label>
           <textarea class="a-textarea" id="pe-bio" style="min-height:80px"></textarea>

@@ -643,21 +643,6 @@
    The field primitives themselves are in styles.css (see section 4 above).
    ========================================================================== */
 
-/* Chip multi-select — reuses the public .chip look. */
-.a-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  border: var(--width-lg) solid var(--colour-gray-600);
-  border-radius: var(--radius-md);
-  background: var(--bg-white);
-  max-height: 168px;
-  overflow-y: auto;
-}
-
-.a-chips .chip { cursor: pointer; }
-
 .a-switch {
   display: flex;
   align-items: center;

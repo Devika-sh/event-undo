@@ -484,33 +484,13 @@ async function hydrateProfile() {
     supabase.from('event_saves').select('event_id').eq('user_id', me.id)
   ]);
 
+  // The card shows the picks; the edit form is where they get changed.
+  const topics = categories.data || [];
+  const mine = new Set((interests.data || []).map((i) => i.category_id));
+
   paintProfileCard(profile.data);
-  wireProfileEdit(profile.data);
-
-  // Interests: every topic chip, the user's own picks pre-selected. Clicking
-  // one writes straight through, so there is no save button to forget.
-  const chipRow = document.querySelector('.profile-card__interests');
-  if (chipRow && categories.data?.length) {
-    const mine = new Set((interests.data || []).map((i) => i.category_id));
-    chipRow.innerHTML = categories.data.map((c) => `
-      <button class="chip${mine.has(c.id) ? ' chip--selected' : ''}" type="button"
-              data-interest="${esc(c.id)}">${esc(c.name)}</button>`).join('');
-
-    chipRow.addEventListener('click', async (e) => {
-      const chip = e.target.closest('[data-interest]');
-      if (!chip) return;
-      const id = chip.dataset.interest;
-      const adding = !chip.classList.contains('chip--selected');
-      chip.classList.toggle('chip--selected', adding);
-
-      const { error } = adding
-        ? await supabase.from('user_interests').insert({ user_id: me.id, category_id: id })
-        : await supabase.from('user_interests').delete()
-            .eq('user_id', me.id).eq('category_id', id);
-
-      if (error) { chip.classList.toggle('chip--selected', !adding); toast('Could not save that'); }
-    });
-  }
+  paintInterests(topics, mine);
+  wireProfileEdit(profile.data, topics, mine);
 
   // Saved + upcoming events replace the placeholder fan.
   const fan = document.querySelector('.events-fan');
@@ -570,26 +550,82 @@ function paintProfileCard(profile) {
   }
 }
 
+/** Read-only chips on the card. Empty stays empty rather than showing a row of
+ *  unpicked options — the pencil is the affordance for adding some. */
+function paintInterests(topics, mine) {
+  const row = document.querySelector('.profile-card__interests');
+  if (!row) return;
+
+  const picked = topics.filter((c) => mine.has(c.id));
+  row.innerHTML = picked
+    .map((c) => `<span class="chip chip--selected">${esc(c.name)}</span>`).join('');
+  row.hidden = picked.length === 0;
+}
+
 /* ---- Edit mode ----------------------------------------------------------- */
 
 /** Elements the edit form stands in for. The photo deliberately stays put so
  *  the user can see what they're changing. */
 const VIEW_PARTS = '.profile-card__name, .profile-card__socials, .profile-card__interests, .eu-signout';
 
-function wireProfileEdit(profile) {
+/** Of those, the ones that are legitimately empty for a new user. */
+const EMPTY_WHEN_UNSET = ['profile-card__socials', 'profile-card__interests'];
+
+/** How many interests a user may pick. */
+const MAX_INTERESTS = 5;
+
+function wireProfileEdit(profile, topics, mine) {
   const toggle = document.querySelector('.edit-btn');
   const form = document.getElementById('profile-edit');
   if (!toggle || !form) return;
+
+  const picker = document.getElementById('pe-interests');
+  const counter = document.getElementById('pe-interests-count');
+
+  const selectedIds = () =>
+    [...picker.querySelectorAll('.chip--selected')].map((c) => c.dataset.cat);
+
+  /** Disables the unpicked chips once the cap is reached, so the limit is felt
+   *  before it's hit rather than reported after. */
+  const refreshPicker = () => {
+    const n = picker.querySelectorAll('.chip--selected').length;
+    const atCap = n >= MAX_INTERESTS;
+
+    picker.querySelectorAll('.chip').forEach((chip) => {
+      chip.disabled = atCap && !chip.classList.contains('chip--selected');
+    });
+
+    counter.textContent = atCap
+      ? `${n} of ${MAX_INTERESTS} — deselect one to swap it out.`
+      : `${n} of ${MAX_INTERESTS} selected.`;
+  };
+
+  const buildPicker = () => {
+    picker.innerHTML = topics.map((c) => `
+      <button class="chip${mine.has(c.id) ? ' chip--selected' : ''}" type="button"
+              data-cat="${esc(c.id)}" aria-pressed="${mine.has(c.id)}">${esc(c.name)}</button>`).join('');
+    refreshPicker();
+  };
+
+  picker.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip || chip.disabled) return;
+    const on = chip.classList.toggle('chip--selected');
+    chip.setAttribute('aria-pressed', String(on));
+    refreshPicker();
+  });
 
   const setEditing = (on) => {
     toggle.setAttribute('aria-pressed', String(on));
     toggle.setAttribute('aria-label', on ? 'Cancel editing' : 'Edit profile');
     form.hidden = !on;
     document.querySelectorAll(VIEW_PARTS).forEach((el) => {
-      // .profile-card__socials manages its own hidden state when empty, so
-      // only re-show it if there was something in it to begin with.
-      if (el.classList.contains('profile-card__socials') && !el.children.length) return;
-      el.hidden = on;
+      // Socials and interests render nothing until the user fills them in.
+      // Those stay hidden on the way back out, so leaving edit mode doesn't
+      // reopen an empty gap in the card.
+      const emptyContainer = EMPTY_WHEN_UNSET.some((c) => el.classList.contains(c))
+                             && !el.children.length;
+      el.hidden = on || emptyContainer;
     });
   };
 
@@ -599,6 +635,7 @@ function wireProfileEdit(profile) {
     document.getElementById('pe-instagram').value = profile?.instagram_url || '';
     document.getElementById('pe-linkedin').value = profile?.linkedin_url || '';
     document.getElementById('pe-photo').value = '';
+    buildPicker();   // rebuilt each time, so Cancel really does discard
     setFormError('profile-error', '');
   };
 
@@ -639,14 +676,37 @@ function wireProfileEdit(profile) {
     }
 
     const { error } = await supabase.from('profiles').update(payload).eq('id', me.id);
+    if (error) {
+      setFormError('profile-error', error.message);
+      save.disabled = false;
+      save.textContent = 'Save';
+      return;
+    }
+
+    // Interests are a join table, so send only what actually changed rather
+    // than clearing and re-inserting the whole set on every save.
+    const chosen = new Set(selectedIds());
+    const added = [...chosen].filter((id) => !mine.has(id));
+    const removed = [...mine].filter((id) => !chosen.has(id));
+
+    if (removed.length) {
+      await supabase.from('user_interests').delete()
+        .eq('user_id', me.id).in('category_id', removed);
+    }
+    if (added.length) {
+      await supabase.from('user_interests')
+        .insert(added.map((category_id) => ({ user_id: me.id, category_id })));
+    }
+
+    mine.clear();
+    chosen.forEach((id) => mine.add(id));
 
     save.disabled = false;
     save.textContent = 'Save';
 
-    if (error) { setFormError('profile-error', error.message); return; }
-
     Object.assign(profile, payload);
     paintProfileCard(profile);
+    paintInterests(topics, mine);
     setEditing(false);
     toast('Profile updated');
   });
