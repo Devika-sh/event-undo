@@ -94,8 +94,8 @@
 
   <!-- ===== Event heading ===== -->
   <section class="event-head">
-    <h1 class="event-head__title">Catalyst Evening Cafe</h1>
-    <p class="event-head__org">by Catalyst IEDC</p>
+    <h1 class="event-head__title"><span class="eu-skeleton" style="width:280px;height:28px"></span></h1>
+    <p class="event-head__org"><span class="eu-skeleton" style="width:160px"></span></p>
   </section>
 
   <!-- ===== Question Card (RSVP) ===== -->
@@ -140,19 +140,19 @@
     <ul class="meta">
       <li class="meta__row">
         <span class="meta__icon meta__icon--date icon-mask" aria-hidden="true"></span>
-        <span class="meta__text">19th July 2026</span>
+        <span class="meta__text"><span class="eu-skeleton" style="width:120px"></span></span>
       </li>
       <li class="meta__row">
         <span class="meta__icon meta__icon--time icon-mask" aria-hidden="true"></span>
-        <span class="meta__text">5:30 PM</span>
+        <span class="meta__text"><span class="eu-skeleton" style="width:80px"></span></span>
       </li>
       <li class="meta__row">
         <span class="meta__icon meta__icon--venue icon-mask" aria-hidden="true"></span>
-        <span class="meta__text">Seminar Hall 2</span>
+        <span class="meta__text"><span class="eu-skeleton" style="width:140px"></span></span>
       </li>
       <li class="meta__row">
         <span class="meta__icon meta__icon--cost icon-mask" aria-hidden="true"></span>
-        <span class="meta__text">Free</span>
+        <span class="meta__text"><span class="eu-skeleton" style="width:60px"></span></span>
       </li>
     </ul>
 
@@ -160,32 +160,26 @@
       <h2 class="about__title">About</h2>
       <div class="about__body">
         <p class="about__text">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-          incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-          exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-          irure dolor in reprehenderit.
+          <span class="eu-skeleton" style="width:100%;margin-bottom:8px"></span>
+          <span class="eu-skeleton" style="width:100%;margin-bottom:8px"></span>
+          <span class="eu-skeleton" style="width:60%"></span>
         </p>
-        <div class="about__tags">
-          <span class="chip">Networking</span>
-          <span class="chip">Offline</span>
-          <span class="chip">Startup</span>
-          <span class="chip">Open Mic</span>
-          <span class="chip">Beginner</span>
-          <span class="chip">IEDC</span>
+        <div class="about__tags" id="about-tags">
+          <span class="eu-skeleton" style="width:72px;height:28px;border-radius:var(--radius-full)"></span>
+          <span class="eu-skeleton" style="width:64px;height:28px;border-radius:var(--radius-full)"></span>
+          <span class="eu-skeleton" style="width:80px;height:28px;border-radius:var(--radius-full)"></span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ===== See Friends Attending ===== -->
-  <section class="friends">
+  <!-- ===== See Friends Attending =====
+       Hidden until real attendee data (with a real profile photo) is
+       available for this event — see hydrateEventDetails() / renderFriends()
+       in public-data.js. Never shows placeholder avatars. -->
+  <section class="friends" id="friends-section" hidden>
     <a class="friends__link" href="#">See Friends Attending</a>
-    <ul class="friends__stack">
-      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Aparna R" width="50" height="50" /></li>
-      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Nikhil V" width="50" height="50" /></li>
-      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Sneha M" width="50" height="50" /></li>
-      <li><img class="friends__avatar" src="Assets/Friend Avatar.png" alt="Arjun K" width="50" height="50" /></li>
-    </ul>
+    <ul class="friends__stack" id="friends-stack"></ul>
   </section>
 
   <!-- ===== More Events ===== -->

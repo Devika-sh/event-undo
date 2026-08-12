@@ -35,6 +35,10 @@ const store = {
   activity: []
 };
 
+/** Every filter-chip group, in the fixed order they're shown across the
+ *  site — keeps the Categories table and its editor from ever disagreeing. */
+const CATEGORY_GROUPS = ['mode', 'timing', 'organiser', 'topic'];
+
 const VIEWS = {
   overview:      { title: 'Overview',      sub: 'How the platform is doing right now' },
   events:        { title: 'Events',        sub: 'Create, edit and publish events' },
@@ -289,6 +293,8 @@ function wireChrome() {
   $('#volunteers-search').addEventListener('input', renderVolunteers);
   $('#users-search').addEventListener('input', renderUsers);
   $('#reg-event').addEventListener('change', renderRegistrations);
+  $('#reg-response').addEventListener('change', renderRegistrations);
+  $('#reg-search').addEventListener('input', renderRegistrations);
 
   $('#account-form').addEventListener('submit', saveAccount);
   $('#password-form').addEventListener('submit', savePassword);
@@ -312,10 +318,15 @@ const LOADERS = {
   settings: loadSettings
 };
 
+// Volunteers only add/edit organisations and events — everything else in
+// the console (overview, categories, people, registrations, activity,
+// settings) is admin-only.
+const VOLUNTEER_VIEWS = ['events', 'organizations'];
+
 function route() {
   let name = location.hash.replace('#', '') || 'overview';
   if (!VIEWS[name]) name = 'overview';
-  if (!isAdmin(store.me) && ['volunteers', 'users', 'team'].includes(name)) name = 'overview';
+  if (!isAdmin(store.me) && !VOLUNTEER_VIEWS.includes(name)) name = 'events';
 
   $$('.a-view').forEach((v) => { v.hidden = v.id !== 'view-' + name; });
   $$('.a-nav__link[data-view]').forEach((b) => {
@@ -727,7 +738,10 @@ async function showAttendees(id) {
   const event = store.events.find((e) => e.id === id);
   openModal({
     title: 'Attendees — ' + (event?.title || ''),
-    body: '<p style="color:var(--text-tertiary)">Loading…</p>',
+    body: `<div class="a-table-wrap"><table class="a-table">
+      <thead><tr><th>Name</th><th>Email</th><th>Response</th><th>When</th></tr></thead>
+      <tbody>${skeletonRows(4, 3)}</tbody>
+    </table></div>`,
     actions: [{ label: 'Close', variant: 'ghost', onClick: closeModal }]
   });
 
@@ -968,33 +982,39 @@ async function loadCategories() {
   }, {});
 
   $('#categories-rows').innerHTML = store.categories.length
-    ? store.categories.map((c) => `
-      <tr>
-        <td><span class="chip">${esc(c.name)}</span></td>
-        <td><span class="a-badge">${esc(c.group_name)}</span></td>
-        <td><span class="a-cell-sub">${esc(c.slug)}</span></td>
-        <td>${c.sort_order}</td>
-        <td>${c.is_active
-              ? '<span class="a-badge a-badge--live">active</span>'
-              : '<span class="a-badge a-badge--muted">hidden</span>'}</td>
-        <td>${usage[c.id] || 0} events</td>
-        <td>
-          <div class="a-table__actions">
-            <button class="a-icon-btn" type="button" title="Edit"
-                    data-action="edit-category" data-id="${esc(c.id)}">
-              <span class="a-icon-btn__glyph a-icon-btn__glyph--edit"></span></button>
-            <button class="a-icon-btn" type="button" title="Delete"
-                    data-action="delete-category" data-id="${esc(c.id)}">
-              <span class="a-icon-btn__glyph a-icon-btn__glyph--delete"></span></button>
-          </div>
-        </td>
-      </tr>`).join('')
+    ? CATEGORY_GROUPS.flatMap((group) => {
+        const rows = store.categories.filter((c) => c.group_name === group);
+        if (!rows.length) return [];
+        return [
+          `<tr class="a-table__group"><td colspan="7">${esc(group)}</td></tr>`,
+          ...rows.map((c) => `
+          <tr>
+            <td><span class="chip">${esc(c.name)}</span></td>
+            <td><span class="a-badge">${esc(c.group_name)}</span></td>
+            <td><span class="a-cell-sub">${esc(c.slug)}</span></td>
+            <td>${c.sort_order}</td>
+            <td>${c.is_active
+                  ? '<span class="a-badge a-badge--live">active</span>'
+                  : '<span class="a-badge a-badge--muted">hidden</span>'}</td>
+            <td>${usage[c.id] || 0} events</td>
+            <td>
+              <div class="a-table__actions">
+                <button class="a-icon-btn" type="button" title="Edit"
+                        data-action="edit-category" data-id="${esc(c.id)}">
+                  <span class="a-icon-btn__glyph a-icon-btn__glyph--edit"></span></button>
+                <button class="a-icon-btn" type="button" title="Delete"
+                        data-action="delete-category" data-id="${esc(c.id)}">
+                  <span class="a-icon-btn__glyph a-icon-btn__glyph--delete"></span></button>
+              </div>
+            </td>
+          </tr>`)
+        ];
+      }).join('')
     : emptyRow(7, 'No categories', 'Add the chips that appear in the Discover filter row.');
 }
 
 function openCategoryEditor(id) {
   const c = store.categories.find((x) => x.id === id) || {};
-  const groups = ['mode', 'timing', 'organiser', 'topic'];
 
   openModal({
     title: id ? 'Edit category' : 'New category',
@@ -1009,7 +1029,7 @@ function openCategoryEditor(id) {
       <div class="a-field">
         <label class="a-field__label" for="ct-group">Filter group</label>
         <select class="a-select" id="ct-group">
-          ${groups.map((g) => `<option value="${g}"${c.group_name === g ? ' selected' : ''}>${g}</option>`).join('')}
+          ${CATEGORY_GROUPS.map((g) => `<option value="${g}"${c.group_name === g ? ' selected' : ''}>${g}</option>`).join('')}
         </select>
         <span class="a-field__hint">Groups are separated by dots in the filter row.</span>
       </div>
@@ -1165,6 +1185,10 @@ function renderUsers() {
           <button class="a-icon-btn" type="button" title="Manage access"
                   data-action="edit-person" data-id="${esc(p.id)}">
             <span class="a-icon-btn__glyph a-icon-btn__glyph--edit"></span></button>
+          ${p.id !== store.me.id ? `
+          <button class="a-icon-btn" type="button" title="Delete user"
+                  data-action="delete-person" data-id="${esc(p.id)}">
+            <span class="a-icon-btn__glyph a-icon-btn__glyph--delete"></span></button>` : ''}
         </div>
       </td>
     </tr>`;
@@ -1350,7 +1374,11 @@ async function sendInvite(btn) {
    ========================================================================== */
 
 async function loadRegistrations() {
-  $('#registrations-rows').innerHTML = skeletonRows(4);
+  $('#registrations-rows').innerHTML = skeletonRows(6);
+  $('#reg-stats').innerHTML = Array.from({ length: 3 }, () =>
+    `<div class="a-stat"><span class="a-skeleton" style="width:60%"></span>
+     <p class="a-stat__value" style="margin-top:12px"><span class="a-skeleton" style="width:40%;height:28px"></span></p></div>`
+  ).join('');
 
   if (!store.events.length) {
     const { data } = await supabase.from('events_public').select('*').order('starts_at', { ascending: false });
@@ -1365,7 +1393,7 @@ async function loadRegistrations() {
 
   const { data, error } = await supabase
     .from('event_rsvps')
-    .select('id, response, created_at, event_id, profiles(full_name, email)')
+    .select('id, response, created_at, event_id, profiles(full_name, email, organizations(name))')
     .order('created_at', { ascending: false });
 
   if (error) { fail(error, 'loading registrations'); return; }
@@ -1375,20 +1403,48 @@ async function loadRegistrations() {
 
 function renderRegistrations() {
   const eventId = $('#reg-event').value;
-  const titleById = Object.fromEntries(store.events.map((e) => [e.id, e.title]));
-  const rows = store.rsvps.filter((r) => !eventId || r.event_id === eventId);
+  const response = $('#reg-response').value;
+  const term = $('#reg-search').value.trim().toLowerCase();
+  const eventById = Object.fromEntries(store.events.map((e) => [e.id, e]));
 
-  $('#registrations-rows').innerHTML = rows.length ? rows.map((r) => `
+  const rows = store.rsvps.filter((r) =>
+    (!eventId || r.event_id === eventId) &&
+    (!response || r.response === response) &&
+    (!term || `${r.profiles?.full_name || ''} ${r.profiles?.email || ''}`.toLowerCase().includes(term)));
+
+  const yes = rows.filter((r) => r.response === 'yes').length;
+  $('#reg-stats').innerHTML = [
+    { label: 'Registrations shown', value: rows.length },
+    { label: 'Attending (yes)', value: yes },
+    { label: 'Not attending (no)', value: rows.length - yes }
+  ].map((t) => `
+    <div class="a-stat">
+      <p class="a-stat__label">${esc(t.label)}</p>
+      <p class="a-stat__value">${t.value}</p>
+    </div>`).join('');
+
+  $('#registrations-rows').innerHTML = rows.length ? rows.map((r) => {
+    const event = eventById[r.event_id];
+    return `
     <tr>
       <td>
         <span class="a-cell-title">${esc(r.profiles?.full_name || '—')}</span>
         <span class="a-cell-sub">${esc(r.profiles?.email || '')}</span>
       </td>
-      <td>${esc(titleById[r.event_id] || '—')}</td>
+      <td>${esc(r.profiles?.organizations?.name || '—')}</td>
+      <td>
+        <span class="a-cell-title">${esc(event?.title || '—')}</span>
+        <span class="a-cell-sub">${esc(event?.organizer || '')}</span>
+      </td>
+      <td>${event
+            ? `<span class="a-cell-title">${esc(formatDate(event.starts_at))}</span>
+               <span class="a-cell-sub">${esc(formatTime(event.starts_at))} · ${esc(event.venue || '—')}</span>`
+            : '—'}</td>
       <td><span class="a-badge ${r.response === 'yes' ? 'a-badge--live' : 'a-badge--muted'}">${esc(r.response)}</span></td>
       <td>${esc(formatShort(r.created_at))}</td>
-    </tr>`).join('')
-    : emptyRow(4, 'No registrations', 'RSVPs submitted on event pages show up here.');
+    </tr>`;
+  }).join('')
+    : emptyRow(6, 'No registrations', 'RSVPs submitted on event pages show up here.');
 }
 
 /* ==========================================================================
@@ -1709,14 +1765,25 @@ const ACTIONS = {
   },
 
   'export-rsvps': () => {
-    const titleById = Object.fromEntries(store.events.map((e) => [e.id, e.title]));
+    const eventById = Object.fromEntries(store.events.map((e) => [e.id, e]));
     const eventId = $('#reg-event').value;
+    const response = $('#reg-response').value;
+    const term = $('#reg-search').value.trim().toLowerCase();
     downloadCsv('eventundo-registrations.csv', [
-      ['Attendee', 'Email', 'Event', 'Response', 'When'],
-      ...store.rsvps.filter((r) => !eventId || r.event_id === eventId).map((r) => [
-        r.profiles?.full_name, r.profiles?.email,
-        titleById[r.event_id], r.response, formatShort(r.created_at)
-      ])
+      ['Attendee', 'Email', 'Organisation', 'Event', 'Event date', 'Venue', 'Response', 'Registered'],
+      ...store.rsvps
+        .filter((r) =>
+          (!eventId || r.event_id === eventId) &&
+          (!response || r.response === response) &&
+          (!term || `${r.profiles?.full_name || ''} ${r.profiles?.email || ''}`.toLowerCase().includes(term)))
+        .map((r) => {
+          const event = eventById[r.event_id];
+          return [
+            r.profiles?.full_name, r.profiles?.email, r.profiles?.organizations?.name,
+            event?.title, event ? formatDate(event.starts_at) : '', event?.venue,
+            r.response, formatShort(r.created_at)
+          ];
+        })
     ]);
   }
 };

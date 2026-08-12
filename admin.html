@@ -34,7 +34,7 @@
 
     <nav class="a-nav" aria-label="Dashboard sections">
       <p class="a-nav__group">Manage</p>
-      <button class="a-nav__link" type="button" data-view="overview" aria-current="page">
+      <button class="a-nav__link" type="button" data-view="overview" data-admin-only aria-current="page">
         <span class="a-nav__icon a-nav__icon--overview" aria-hidden="true"></span> Overview
       </button>
       <button class="a-nav__link" type="button" data-view="events">
@@ -45,7 +45,7 @@
         <span class="a-nav__icon a-nav__icon--orgs" aria-hidden="true"></span> Organisations
         <span class="a-nav__count" data-count="organizations">0</span>
       </button>
-      <button class="a-nav__link" type="button" data-view="categories">
+      <button class="a-nav__link" type="button" data-view="categories" data-admin-only>
         <span class="a-nav__icon a-nav__icon--tags" aria-hidden="true"></span> Categories
       </button>
 
@@ -58,7 +58,7 @@
         <span class="a-nav__icon a-nav__icon--users" aria-hidden="true"></span> Users
         <span class="a-nav__count" data-count="users">0</span>
       </button>
-      <button class="a-nav__link" type="button" data-view="registrations">
+      <button class="a-nav__link" type="button" data-view="registrations" data-admin-only>
         <span class="a-nav__icon a-nav__icon--rsvp" aria-hidden="true"></span> Registrations
       </button>
       <button class="a-nav__link" type="button" data-view="team" data-admin-only>
@@ -66,10 +66,10 @@
       </button>
 
       <p class="a-nav__group">System</p>
-      <button class="a-nav__link" type="button" data-view="activity">
+      <button class="a-nav__link" type="button" data-view="activity" data-admin-only>
         <span class="a-nav__icon a-nav__icon--activity" aria-hidden="true"></span> Activity
       </button>
-      <button class="a-nav__link" type="button" data-view="settings">
+      <button class="a-nav__link" type="button" data-view="settings" data-admin-only>
         <span class="a-nav__icon a-nav__icon--settings" aria-hidden="true"></span> Settings
       </button>
       <a class="a-nav__link" href="index.html" target="_blank" rel="noopener">
@@ -79,9 +79,9 @@
 
     <div class="a-sidebar__foot">
       <div class="a-user">
-        <span class="a-avatar" id="me-avatar">—</span>
+        <span class="a-avatar" id="me-avatar"><span class="a-skeleton" style="width:16px"></span></span>
         <div class="a-user__text">
-          <p class="a-user__name" id="me-name">Loading…</p>
+          <p class="a-user__name" id="me-name"><span class="a-skeleton" style="width:100px"></span></p>
           <p class="a-user__role" id="me-role"></p>
         </div>
       </div>
@@ -254,10 +254,20 @@
 
       <!-- ---------- Registrations ---------- -->
       <section class="a-view" id="view-registrations" hidden>
+        <div class="a-stats" id="reg-stats"></div>
         <div class="a-panel">
           <div class="a-toolbar">
-            <select class="a-select" id="reg-event" style="max-width:360px" aria-label="Choose event">
+            <label class="a-search">
+              <span class="a-search__icon" aria-hidden="true"></span>
+              <input type="search" id="reg-search" placeholder="Search attendees" aria-label="Search attendees" />
+            </label>
+            <select class="a-select" id="reg-event" style="max-width:280px" aria-label="Choose event">
               <option value="">All events</option>
+            </select>
+            <select class="a-select" id="reg-response" style="width:auto" aria-label="Filter by response">
+              <option value="">Yes &amp; No</option>
+              <option value="yes">Yes only</option>
+              <option value="no">No only</option>
             </select>
             <span class="a-toolbar__spacer"></span>
             <button class="a-btn a-btn--ghost a-btn--sm" type="button" data-action="export-rsvps">
@@ -267,7 +277,10 @@
           <div class="a-table-wrap">
             <table class="a-table">
               <thead>
-                <tr><th>Attendee</th><th>Event</th><th>Response</th><th>When</th></tr>
+                <tr>
+                  <th>Attendee</th><th>Organisation</th><th>Event</th><th>When it's on</th>
+                  <th>Response</th><th>Registered</th>
+                </tr>
               </thead>
               <tbody id="registrations-rows"></tbody>
             </table>

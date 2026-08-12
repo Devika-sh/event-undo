@@ -1456,3 +1456,36 @@ body.is-scrolled .navbar {
   color: var(--colour-orange-700);
   font-size: var(--font-size-body-2xs);
 }
+
+/* ==========================================================================
+   SKELETON LOADER
+   Shimmering placeholder used on public pages while Supabase data is still
+   in flight, in place of literal "Loading…" text or stale demo copy. Same
+   look as the admin console's .a-skeleton (admin.css), duplicated here so a
+   public page doesn't have to load the dashboard stylesheet for one class.
+   ========================================================================== */
+
+.eu-skeleton {
+  display: inline-block;
+  height: 12px;
+  width: 100%;
+  min-width: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--colour-gray-500) 25%,
+                                     var(--colour-gray-600) 37%,
+                                     var(--colour-gray-500) 63%);
+  background-size: 400% 100%;
+  animation: eu-shimmer 1.2s ease infinite;
+  vertical-align: middle;
+}
+
+.eu-skeleton--avatar {
+  width: 50px;
+  height: 50px;
+  min-width: 0;
+  border-radius: 50%;
+}
+
+@keyframes eu-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+@media (prefers-reduced-motion: reduce) { .eu-skeleton { animation: none; } }

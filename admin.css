@@ -554,6 +554,20 @@
 .a-table tbody tr:last-child td { border-bottom: none; }
 .a-table tbody tr:hover { background: var(--colour-gray-500); }
 
+/* Group divider row — separates categories (or any grouped table) by
+ * group_name instead of letting different groups run together. */
+.a-table__group td {
+  padding: var(--space-md) var(--space-3xl);
+  background: var(--colour-gray-500);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-2xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  border-bottom: var(--width-lg) solid var(--colour-gray-600);
+}
+.a-table__group:hover td { background: var(--colour-gray-500); }
+
 .a-table__actions {
   display: flex;
   gap: var(--space-md);

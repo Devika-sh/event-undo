@@ -359,11 +359,11 @@ async function hydrateTeam() {
 
 async function hydrateEventDetails() {
   const id = new URLSearchParams(location.search).get('id');
-  if (!id) return;
+  if (!id) { clearEventSkeletons('This event could not be found.'); return; }
 
   const { data: event, error } = await supabase
     .from('events_public').select('*').eq('id', id).maybeSingle();
-  if (error || !event) return;
+  if (error || !event) { clearEventSkeletons('This event could not be found.'); return; }
 
   document.title = `eventundo — ${event.title}`;
 
@@ -397,6 +397,31 @@ async function hydrateEventDetails() {
 
   wireRsvp(event);
   hydrateMoreEvents(event);
+  hydrateFriends(event);
+}
+
+/** Fetch failed / no id in the URL — clear every skeleton with a plain
+ *  message instead of leaving the shimmer spinning forever. */
+function clearEventSkeletons(message) {
+  const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
+  set('.event-head__title', message);
+  set('.event-head__org', '');
+  document.querySelectorAll('.meta__text').forEach((el) => { el.textContent = '—'; });
+  const about = document.querySelector('.about__text');
+  if (about) about.textContent = message;
+  const tagRow = document.querySelector('.about__tags');
+  if (tagRow) tagRow.innerHTML = '';
+  const question = document.querySelector('.question');
+  if (question) question.hidden = true;
+}
+
+/** Label reflects what the button will actually do for the choice that's
+ *  selected right now, so "Register Now" never appears next to "No". */
+function updateCtaLabel(submit, choiceValue, hasExternalLink) {
+  const label = choiceValue === 'yes' && hasExternalLink ? 'Register Now'
+    : choiceValue === 'yes' ? "I'm going"
+    : 'Save response';
+  submit.firstChild.textContent = label + ' ';
 }
 
 async function wireRsvp(event) {
@@ -404,8 +429,12 @@ async function wireRsvp(event) {
   if (!form) return;
   const submit = form.querySelector('.btn-cta');
   const radios = form.querySelectorAll('input[name="rsvp"]');
+  const hasExternalLink = Boolean(event.register_url);
 
-  radios.forEach((r) => r.addEventListener('change', () => { submit.disabled = false; }));
+  radios.forEach((r) => r.addEventListener('change', () => {
+    submit.disabled = false;
+    updateCtaLabel(submit, r.value, hasExternalLink);
+  }));
 
   if (me) {
     const { data } = await supabase.from('event_rsvps')
@@ -414,7 +443,7 @@ async function wireRsvp(event) {
       const existing = form.querySelector(`input[name="rsvp"][value="${data.response}"]`);
       if (existing) existing.checked = true;
       submit.disabled = false;
-      submit.firstChild.textContent = 'Update response ';
+      updateCtaLabel(submit, data.response, hasExternalLink);
     }
   }
 
@@ -426,6 +455,8 @@ async function wireRsvp(event) {
       return;
     }
 
+    // Only a "yes" choice is a registration; only that choice may ever open
+    // the organiser's external form, and only after the RSVP is recorded.
     const choice = form.querySelector('input[name="rsvp"]:checked');
     if (!choice) return;
 
@@ -440,12 +471,37 @@ async function wireRsvp(event) {
 
     toast(choice.value === 'yes' ? "You're on the list" : 'Response saved');
 
-    // An external registration form, if the organiser set one, opens only
-    // after the RSVP is recorded — never as a surprise redirect.
     if (choice.value === 'yes' && event.register_url) {
       window.open(event.register_url, '_blank', 'noopener');
     }
   });
+}
+
+/** Real attendees only — no placeholder avatars. Shows the profile photo of
+ *  people (besides the viewer) who RSVPed "yes" and hides the whole section
+ *  when there's nobody, or nobody with a photo, to show. */
+async function hydrateFriends(event) {
+  const section = document.querySelector('#friends-section');
+  const stack = document.querySelector('#friends-stack');
+  if (!section || !stack) return;
+
+  const { data, error } = await supabase
+    .from('event_rsvps')
+    .select('user_id, profiles(full_name, avatar_url)')
+    .eq('event_id', event.id)
+    .eq('response', 'yes')
+    .neq('user_id', me?.id ?? '00000000-0000-0000-0000-000000000000')
+    .limit(4);
+
+  if (error || !data?.length) { section.hidden = true; return; }
+
+  const withPhotos = data.filter((r) => r.profiles?.avatar_url);
+  if (!withPhotos.length) { section.hidden = true; return; }
+
+  stack.innerHTML = withPhotos.map((r) => `
+    <li><img class="friends__avatar" src="${esc(r.profiles.avatar_url)}"
+             alt="${esc(r.profiles.full_name || 'Attendee')}" width="50" height="50" /></li>`).join('');
+  section.hidden = false;
 }
 
 async function hydrateMoreEvents(event) {
