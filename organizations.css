@@ -187,9 +187,10 @@
 /* When real artwork is supplied it fills the slot and the frame steps back. */
 .org-logo--art {
   border-color: transparent;
-  border-radius: var(--radius-none);
+  border-radius: 10px;
+  overflow: hidden;
 }
-.org-logo img { width: 100%; height: 100%; object-fit: contain; }
+.org-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; }
 
 /* Invisible at desktop (org-identity/org-socials flow as direct siblings of
    org-logo, unchanged) — becomes a real grouping box at the phone breakpoint,
@@ -261,12 +262,24 @@
   flex: 1;
   min-width: 0;
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* Shows the org's type (club, department, cell…) so it reads at a glance
+   without repeating it in the copy below. */
+.org-card__type-chip {
+  align-self: flex-start;
+}
+
+.org-card__about-copy {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-6xl);   /* Figma 142 (space-between) → nearest token 160 */
 }
 
-.org-card__about p {
+.org-card__about-copy p {
   font-size: var(--font-size-body-md);      /* Body 2xl/Medium (18) */
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-body-md);
@@ -395,12 +408,12 @@
      icon size at 22px. */
   .org-socials__icon { width: 22px; height: 22px; }
 
-  .org-card__about {
-    align-self: stretch;
+  .org-card__about { align-self: stretch; }
+  .org-card__about-copy {
     grid-template-columns: 1fr;
     gap: var(--space-3xl);    /* 24 */
   }
-  .org-card__about p {
+  .org-card__about-copy p {
     font-size: var(--font-size-body-sm);      /* Body xl/Regular (16) */
     font-weight: var(--font-weight-regular);
   }

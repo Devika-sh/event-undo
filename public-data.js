@@ -12,7 +12,8 @@
 
 import {
   supabase, isConfigured, getSession, isStaff,
-  formatDate, formatTime, formatFee, esc, initials, timingOf
+  formatDate, formatTime, formatFee, esc, initials, timingOf,
+  cacheGet, cacheSet
 } from './supabase-client.js';
 import { initDropzones, resetDropzone } from './dropzone.js';
 // Side-effect only: wires every .a-select into the custom dropdown once it's
@@ -34,6 +35,7 @@ async function init() {
   }
 
   paintAccountLink();
+  applySiteSettings();
 
   // Each page opts in by having the element the hydrator looks for.
   if (document.querySelector('.event-grid'))  hydrateDiscover();
@@ -80,6 +82,34 @@ function paintAccountLink() {
   document.querySelectorAll('a[href="profile.html"]').forEach((link) => {
     if (link.textContent.trim() === 'Profile') link.textContent = 'Sign in';
   });
+}
+
+/** Applies the admin-managed page title, favicon and link-preview (Open
+ *  Graph) tags from `site_settings`. Favicon is genuinely site-wide, so it's
+ *  updated on every page; the title/description/OG fields only override
+ *  what's already on the page (index.html ships the OG tags — see its
+ *  <head> — everywhere else keeps its own per-page <title>). */
+async function applySiteSettings() {
+  const { data } = await supabase.from('site_settings').select('value').eq('key', 'site').maybeSingle();
+  const s = data?.value;
+  if (!s) return;
+
+  const favicon = document.getElementById('site-favicon');
+  if (favicon && s.favicon_url) favicon.href = s.favicon_url;
+
+  if (!document.querySelector('.event-grid')) return;   // title/OG only apply on the homepage
+
+  if (s.title) document.title = s.title;
+
+  const setMeta = (selector, content) => {
+    if (!content) return;
+    const el = document.querySelector(selector);
+    if (el) el.setAttribute('content', content);
+  };
+  setMeta('meta[name="description"]', s.description);
+  setMeta('meta[property="og:title"]', s.og_title || s.title);
+  setMeta('meta[property="og:description"]', s.og_description || s.description);
+  setMeta('meta[property="og:image"]', s.og_image_url);
 }
 
 /** Where an interrupted action parks itself while the user signs in. */
@@ -178,6 +208,19 @@ let allEvents = [];
 const activeChips = new Set();
 
 async function hydrateDiscover() {
+  const search = document.querySelector('.search-bar__input');
+  if (search) search.addEventListener('input', renderGrid);
+
+  // Stale-while-revalidate: a cached list (if any) paints instantly — no
+  // spinner needed — then the live fetch below replaces it once it lands.
+  const cached = cacheGet('discover');
+  if (cached?.events?.length) {
+    allEvents = cached.events;
+    if (cached.categories?.length) buildFilters(cached.categories);
+    hydrateFeatured();
+    renderGrid();
+  }
+
   const [events, categories] = await Promise.all([
     supabase.from('events_public').select('*')
       .eq('status', 'published').order('starts_at', { ascending: false }),
@@ -185,15 +228,14 @@ async function hydrateDiscover() {
       .eq('is_active', true).order('group_name').order('sort_order')
   ]);
 
-  if (events.error || !events.data?.length) return;   // keep the static grid
+  if (events.error || !events.data?.length) return;   // keep the cached/static grid
   allEvents = events.data;
 
   if (categories.data?.length) buildFilters(categories.data);
   hydrateFeatured();
   renderGrid();
 
-  const search = document.querySelector('.search-bar__input');
-  if (search) search.addEventListener('input', renderGrid);
+  cacheSet('discover', { events: events.data, categories: categories.data || [] });
 }
 
 function hydrateFeatured() {
@@ -208,13 +250,35 @@ function hydrateFeatured() {
     photo.alt = featured.title;
   }
 
+  const href = 'event-details.html?id=' + encodeURIComponent(featured.id);
+  const label = 'View ' + featured.title;
+
+  // The whole card opens the event — same transparent-overlay pattern as the
+  // grid's own .card__link, sitting under the "View event" button (desktop
+  // only; hidden on mobile, see styles.css) so the button keeps its own hit
+  // target instead of double-handling the click.
+  const section = document.querySelector('.featured');
+  if (section) {
+    let cardLink = section.querySelector('.featured__card-link');
+    if (!cardLink) {
+      cardLink = document.createElement('a');
+      cardLink.className = 'featured__card-link';
+      section.prepend(cardLink);
+    }
+    cardLink.href = href;
+    cardLink.setAttribute('aria-label', label);
+  }
+
   const body = document.querySelector('.featured__body');
-  if (body && !body.querySelector('.featured__link')) {
-    const link = document.createElement('a');
-    link.className = 'featured__link';
-    link.href = 'event-details.html?id=' + encodeURIComponent(featured.id);
-    link.textContent = 'View event';
-    body.append(link);
+  if (body) {
+    let link = body.querySelector('.featured__link');
+    if (!link) {
+      link = document.createElement('a');
+      link.className = 'featured__link';
+      link.textContent = 'View event';
+      body.append(link);
+    }
+    link.href = href;
   }
 }
 
@@ -236,6 +300,11 @@ function buildFilters(categories) {
                 data-slug="${esc(c.slug)}">${esc(c.name)}</button>`).join('')}
     </div>`).join('<span class="filters__dot" aria-hidden="true"></span>');
 
+  // Cache-then-network can call this twice (cached paint, then the live
+  // fetch) — innerHTML above rebuilds the chips either way, but the listener
+  // is on the container, so guard against binding it a second time.
+  if (set.dataset.wired) return;
+  set.dataset.wired = '1';
   set.addEventListener('click', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
@@ -286,11 +355,19 @@ function renderGrid() {
    ========================================================================== */
 
 async function hydrateOrganizations() {
-  const list = document.querySelector('.org-list');
+  const cached = cacheGet('organizations');
+  if (cached?.length) renderOrgs(cached);
+
   const { data, error } = await supabase.from('organizations')
     .select('*').eq('is_active', true).order('name');
-  if (error || !data?.length) return;
+  if (error || !data?.length) return;   // keep the cached/static grid
 
+  renderOrgs(data);
+  cacheSet('organizations', data);
+}
+
+function renderOrgs(data) {
+  const list = document.querySelector('.org-list');
   buildOrgFilters(data);
 
   list.innerHTML = data.map((org) => {
@@ -319,7 +396,10 @@ async function hydrateOrganizations() {
         </div>
       </div>
       <div class="org-card__about">
-        ${paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
+        ${org.type ? `<span class="chip org-card__type-chip">${esc(org.type.charAt(0).toUpperCase() + org.type.slice(1))}</span>` : ''}
+        <div class="org-card__about-copy">
+          ${paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
+        </div>
       </div>
     </article>`;
   }).join('');
@@ -345,13 +425,15 @@ function buildOrgFilters(orgs) {
    ========================================================================== */
 
 async function hydrateTeam() {
-  const grid = document.querySelector('.team-grid');
+  const cached = cacheGet('team');
+  if (cached?.members?.length) renderTeam(cached.members, cached.interestsByMember);
+
   const [members, interestRows] = await Promise.all([
     supabase.from('team_members').select('*, organizations(name)')
       .eq('is_active', true).order('sort_order').order('name'),
     supabase.from('team_member_interests').select('team_member_id, categories(name)')
   ]);
-  if (members.error || !members.data?.length) return;
+  if (members.error || !members.data?.length) return;   // keep the cached/static grid
 
   const interestsByMember = (interestRows.data || []).reduce((acc, r) => {
     if (!r.categories?.name) return acc;
@@ -359,9 +441,15 @@ async function hydrateTeam() {
     return acc;
   }, {});
 
+  renderTeam(members.data, interestsByMember);
+  cacheSet('team', { members: members.data, interestsByMember });
+}
+
+function renderTeam(membersData, interestsByMember) {
+  const grid = document.querySelector('.team-grid');
   // The static grid opens with a heading card; keep whatever isn't a person.
   const lead = grid.querySelector(':scope > :not(.profile-card)');
-  const cards = members.data.map((m) => {
+  const cards = membersData.map((m) => {
     const interests = interestsByMember[m.id] || [];
     return `
     <article class="profile-card">
@@ -961,6 +1049,16 @@ function showAuthPanel() {
     // than reloading into a page that will just ask them to sign in again.
     if (data.session) location.reload();
     else setFormError('signup-error', 'Check your inbox to confirm your email, then sign in.');
+  });
+
+  document.getElementById('google-signin').addEventListener('click', async () => {
+    setFormError('signin-error', '');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + location.pathname }
+    });
+    // On success the browser navigates to Google, so this only ever runs on failure.
+    if (error) setFormError('signin-error', error.message);
   });
 
   document.getElementById('reset-btn').addEventListener('click', async () => {

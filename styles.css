@@ -69,42 +69,33 @@ img { display: block; max-width: 100%; }
 }
 
 /* ==========================================================================
-   Page Loader (splash screen)
-   Full-viewport brand-orange spinner shown briefly on entry to every page;
-   removed from the a11y tree and faded out once the page is ready.
+   Page transitions
+   No blocking splash screen — content (from cache or a fresh fetch) shows
+   immediately. Instead the whole page slides/fades in on entry, and a
+   navbar/mobile-menu click slides the current page out first, so moving
+   between pages reads as one continuous motion rather than a hard cut.
    ========================================================================== */
 
-.page-loader {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  background: var(--bg-primary);
-  opacity: 1;
-  transition: opacity 320ms ease;
+body {
+  animation: page-slide-in 320ms ease both;
 }
 
-.page-loader[data-hidden] {
-  opacity: 0;
-  pointer-events: none;
+body.page-exit {
+  animation: page-slide-out 200ms ease both;
 }
 
-.page-loader__spinner {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-full);
-  border: 4px solid var(--border-inactive);
-  border-top-color: var(--icon-brand);
-  animation: page-loader-spin 750ms linear infinite;
+@keyframes page-slide-in {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes page-loader-spin {
-  to { transform: rotate(360deg); }
+@keyframes page-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-28px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-loader__spinner { animation-duration: 1500ms; }
+  body, body.page-exit { animation: none; }
 }
 
 /* ==========================================================================
@@ -372,6 +363,27 @@ body.is-scrolled .navbar {
 
 /* Focus state is undefined in Figma — derived: keep border-brand at width/xl. */
 .search-bar:focus-within { border-width: var(--width-xl); }
+
+/* Native "clear search" (x) control browsers draw inside type="search" inputs
+   defaults to a blue/gray system glyph — replace it with a brand-orange mask
+   icon so it matches the rest of the search bar instead of clashing with it. */
+.search-bar__input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-left: var(--space-md);
+  cursor: pointer;
+  background-color: var(--icon-brand);
+  -webkit-mask-image: url("Assets/icon-x-close.svg");
+          mask-image: url("Assets/icon-x-close.svg");
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+}
 
 /* `search-md` — 24x24 frame (the standalone-affordance size), 18x18 glyph. */
 .search-bar__icon {
@@ -1431,6 +1443,24 @@ body.is-scrolled .navbar {
 .a-btn--block { width: 100%; }
 
 .a-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Divider between a password form and an OAuth alternative — "or" centred on
+   a rule, used on both sign-in surfaces (admin console + public profile). */
+.a-login__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  margin: var(--space-2xl) 0;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-2xs);
+}
+.a-login__divider::before,
+.a-login__divider::after {
+  content: '';
+  flex: 1;
+  height: var(--width-lg);
+  background: var(--colour-gray-600);
+}
 
 .a-form { display: grid; gap: var(--space-2xl); }
 

@@ -16,12 +16,6 @@
 </head>
 <body class="admin-body">
 
-<!-- Shown while the session and profile are resolving, so the shell never
-     flashes an empty sidebar to someone who's about to be bounced to login. -->
-<div class="page-loader" id="page-loader" aria-hidden="true">
-  <span class="page-loader__spinner"></span>
-</div>
-
 <div class="admin" id="admin" hidden>
 
   <!-- ===================================================================
@@ -72,6 +66,9 @@
       </button>
       <button class="a-nav__link" type="button" data-view="settings">
         <span class="a-nav__icon a-nav__icon--settings" aria-hidden="true"></span> Settings
+      </button>
+      <button class="a-nav__link" type="button" data-view="site" data-admin-only>
+        <span class="a-nav__icon a-nav__icon--site" aria-hidden="true"></span> Site
       </button>
       <a class="a-nav__link" href="index.html" target="_blank" rel="noopener">
         <span class="a-nav__icon a-nav__icon--site" aria-hidden="true"></span> View live site
@@ -369,7 +366,7 @@
                   <label class="a-field__label" for="acc-photo">Profile photo</label>
                   <div class="a-dropzone" data-dropzone data-input-id="acc-photo" data-accept="image/*"
                        data-hint="JPEG or PNG, up to 5MB"></div>
-                  <span class="a-field__hint">Square images look best.</span>
+                  <span class="a-field__hint">Square images look best — ideally 500 × 500px.</span>
                 </div>
                 <div class="a-field">
                   <label class="a-field__label" for="acc-bio">Bio</label>
@@ -428,6 +425,79 @@
                   <div><button class="a-btn" type="button" id="featured-save">Set featured</button></div>
                 </div>
               </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ---------- Site (page title, favicon, website preview) ---------- -->
+      <section class="a-view" id="view-site" hidden>
+        <div class="a-grid-2">
+
+          <div class="a-panel">
+            <div class="a-panel__head"><h2 class="a-panel__title">Page title &amp; favicon</h2></div>
+            <div class="a-panel__body">
+              <form class="a-form" id="site-basics-form">
+                <p class="a-form__error" id="site-basics-error" hidden role="alert"></p>
+                <div class="a-field">
+                  <label class="a-field__label" for="site-title">Page title</label>
+                  <input class="a-input" id="site-title" type="text" maxlength="70"
+                         placeholder="eventundo — Discover" />
+                  <span class="a-field__hint">Shown in the browser tab across the site.</span>
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="site-description">Meta description</label>
+                  <textarea class="a-textarea" id="site-description" maxlength="160"
+                            placeholder="Discover what's on around campus, from club nights to hackathons."></textarea>
+                  <span class="a-field__hint">Up to 160 characters. Shown under the title in search results.</span>
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="site-favicon-file">Favicon</label>
+                  <div class="a-dropzone" data-dropzone data-input-id="site-favicon-file" data-accept="image/png,image/x-icon,image/svg+xml"
+                       data-hint="PNG, ICO or SVG, up to 5MB"></div>
+                  <span class="a-field__hint">Best size 512 × 512px (square). Displayed as small as 16 × 16px.</span>
+                </div>
+                <div><button class="a-btn" type="submit">Save</button></div>
+              </form>
+            </div>
+          </div>
+
+          <div class="a-panel">
+            <div class="a-panel__head"><h2 class="a-panel__title">Website preview</h2></div>
+            <div class="a-panel__body">
+              <p class="a-field__hint" style="margin-top:0">
+                Controls how eventundo looks when a link is shared on WhatsApp, iMessage, LinkedIn, etc.
+              </p>
+              <form class="a-form" id="site-preview-form">
+                <p class="a-form__error" id="site-preview-error" hidden role="alert"></p>
+                <div class="a-field">
+                  <label class="a-field__label" for="site-og-title">Preview title</label>
+                  <input class="a-input" id="site-og-title" type="text" maxlength="70" />
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="site-og-description">Preview description</label>
+                  <textarea class="a-textarea" id="site-og-description" maxlength="200"></textarea>
+                </div>
+                <div class="a-field">
+                  <label class="a-field__label" for="site-og-image-file">Preview image</label>
+                  <div class="a-dropzone" data-dropzone data-input-id="site-og-image-file" data-accept="image/*"
+                       data-hint="JPEG or PNG, up to 5MB"></div>
+                  <span class="a-field__hint">Best size 1200 × 630px (1.91:1) — the standard link-preview ratio.</span>
+                </div>
+                <div class="a-field">
+                  <div class="a-og-preview" id="site-og-preview" aria-hidden="true">
+                    <div class="a-og-preview__image" id="site-og-preview-image"></div>
+                    <div class="a-og-preview__body">
+                      <p class="a-og-preview__site">eventundo.app</p>
+                      <p class="a-og-preview__title" id="site-og-preview-title">eventundo — Discover</p>
+                      <p class="a-og-preview__desc" id="site-og-preview-desc"></p>
+                    </div>
+                  </div>
+                  <span class="a-field__hint">Live preview of the shared-link card.</span>
+                </div>
+                <div><button class="a-btn" type="submit">Save</button></div>
+              </form>
             </div>
           </div>
 

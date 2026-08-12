@@ -37,7 +37,8 @@ const store = {
   interests: [],
   team: [],
   teamInterests: [],
-  activity: []
+  activity: [],
+  site: null          // site_settings row (key: 'site')
 };
 
 /** Every filter-chip group, in the fixed order they're shown across the
@@ -54,7 +55,8 @@ const VIEWS = {
   registrations: { title: 'Registrations', sub: 'RSVPs collected from event pages' },
   team:          { title: 'Site roster',   sub: 'The public “The Team” page' },
   activity:      { title: 'Activity',      sub: 'Who changed what, and when' },
-  settings:      { title: 'Settings',      sub: 'Your account and site-wide options' }
+  settings:      { title: 'Settings',      sub: 'Your account and site-wide options' },
+  site:          { title: 'Site',          sub: 'Page title, favicon and link-preview card' }
 };
 
 /* ---- toast --------------------------------------------------------------- */
@@ -227,7 +229,6 @@ async function boot() {
   paintIdentity();
   applyRoleVisibility();
 
-  $('#page-loader').setAttribute('data-hidden', '');
   $('#admin').hidden = false;
 
   await loadReferenceData();
@@ -305,6 +306,11 @@ function wireChrome() {
   $('#account-form').addEventListener('submit', saveAccount);
   $('#password-form').addEventListener('submit', savePassword);
   $('#featured-save').addEventListener('click', saveFeatured);
+
+  $('#site-basics-form').addEventListener('submit', saveSiteBasics);
+  $('#site-preview-form').addEventListener('submit', saveSitePreview);
+  $('#site-og-title').addEventListener('input', paintOgPreview);
+  $('#site-og-description').addEventListener('input', paintOgPreview);
 }
 
 /* ==========================================================================
@@ -321,7 +327,8 @@ const LOADERS = {
   registrations: loadRegistrations,
   team: loadTeam,
   activity: loadActivity,
-  settings: loadSettings
+  settings: loadSettings,
+  site: loadSiteSettings
 };
 
 // Volunteers only add/edit organisations and events — everything else in
@@ -649,6 +656,7 @@ function eventForm(ev = {}) {
         <label class="a-field__label" for="ev-banner-file">Upload banner</label>
         <div class="a-dropzone" data-dropzone data-input-id="ev-banner-file" data-accept="image/*"
              data-hint="JPEG or PNG, up to 5MB"></div>
+        <span class="a-field__hint">Best size 1200 × 1000px (6:5 landscape).</span>
       </div>
     </div>
 
@@ -963,6 +971,7 @@ function openOrgEditor(id) {
           <label class="a-field__label" for="og-logo-file">Upload logo</label>
           <div class="a-dropzone" data-dropzone data-input-id="og-logo-file" data-accept="image/*"
                data-hint="JPEG or PNG, up to 5MB"></div>
+          <span class="a-field__hint">Best size 500 × 500px (square). Transparent PNG works best.</span>
         </div>
       </div>
 
@@ -1856,6 +1865,100 @@ async function saveFeatured() {
     toast('Featured event updated', 'success');
   }
   loadEvents();
+}
+
+/* ---- Site (page title, favicon, link-preview card) ----------------------- */
+
+async function loadSiteSettings() {
+  if (!isAdmin(store.me)) return;
+
+  if (!store.site) {
+    const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'site').maybeSingle();
+    if (error) { fail(error, 'loading site settings'); return; }
+    store.site = data?.value || {};
+  }
+
+  const s = store.site;
+  $('#site-title').value = s.title || '';
+  $('#site-description').value = s.description || '';
+  $('#site-og-title').value = s.og_title || '';
+  $('#site-og-description').value = s.og_description || '';
+  paintOgPreview();
+}
+
+/** Keeps the mock link-preview card in Settings › Site in sync as the admin
+ *  types, falling back to the current saved values (or sensible defaults)
+ *  for whichever field is still empty. */
+function paintOgPreview() {
+  const s = store.site || {};
+  const title = $('#site-og-title').value.trim() || s.og_title || 'eventundo — Discover';
+  const desc = $('#site-og-description').value.trim() || s.og_description || '';
+  const image = s.og_image_url;
+  $('#site-og-preview-title').textContent = title;
+  $('#site-og-preview-desc').textContent = desc;
+  $('#site-og-preview-image').style.backgroundImage = image ? `url("${image}")` : '';
+}
+
+async function saveSiteSettings(patch) {
+  const next = { ...(store.site || {}), ...patch };
+  const { error } = await supabase.from('site_settings')
+    .upsert({ key: 'site', value: next, updated_at: new Date().toISOString() });
+  if (error) return error;
+  store.site = next;
+  return null;
+}
+
+async function saveSiteBasics(e) {
+  e.preventDefault();
+  setError('site-basics-error', '');
+  const btn = $('#site-basics-form button[type="submit"]');
+  btn.disabled = true;
+
+  const patch = {
+    title: $('#site-title').value.trim() || null,
+    description: $('#site-description').value.trim() || null
+  };
+
+  const file = $('#site-favicon-file').files[0];
+  if (file) {
+    const uploaded = await uploadMedia(file, 'site');
+    if (!uploaded) { btn.disabled = false; return; }
+    patch.favicon_url = uploaded;
+  }
+
+  const error = await saveSiteSettings(patch);
+  btn.disabled = false;
+  if (error) { setError('site-basics-error', error.message); return; }
+
+  resetDropzone($('#site-favicon-file'));
+  toast('Site settings saved', 'success');
+}
+
+async function saveSitePreview(e) {
+  e.preventDefault();
+  setError('site-preview-error', '');
+  const btn = $('#site-preview-form button[type="submit"]');
+  btn.disabled = true;
+
+  const patch = {
+    og_title: $('#site-og-title').value.trim() || null,
+    og_description: $('#site-og-description').value.trim() || null
+  };
+
+  const file = $('#site-og-image-file').files[0];
+  if (file) {
+    const uploaded = await uploadMedia(file, 'site');
+    if (!uploaded) { btn.disabled = false; return; }
+    patch.og_image_url = uploaded;
+  }
+
+  const error = await saveSiteSettings(patch);
+  btn.disabled = false;
+  if (error) { setError('site-preview-error', error.message); return; }
+
+  resetDropzone($('#site-og-image-file'));
+  paintOgPreview();
+  toast('Website preview saved', 'success');
 }
 
 /* ==========================================================================
