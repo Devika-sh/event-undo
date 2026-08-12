@@ -76,8 +76,15 @@ img { display: block; max-width: 100%; }
    between pages reads as one continuous motion rather than a hard cut.
    ========================================================================== */
 
+/* No `both`/`forwards`: a transform lingering on `body` after the animation
+   ends — even translateX(0) — makes it the containing block for every
+   `position: fixed` descendant (the pinned nav, .scroll-shade, …), so they'd
+   stop tracking the viewport and instead scroll away with `body`. Once this
+   animation finishes, `body` has no fill-mode holding transform applied, so
+   it drops back to none — same end state visually, but fixed descendants
+   stay actually fixed. */
 body {
-  animation: page-slide-in 320ms ease both;
+  animation: page-slide-in 320ms ease;
 }
 
 body.page-exit {
@@ -114,11 +121,16 @@ body.page-exit {
    title upward into where the bar used to be.
    ========================================================================== */
 
-.head-bar-spacer { display: none; }
+/* Now reserved at every width, not just desktop — the mobile bar (org/team/
+   profile/detail pages) is fixed too (see each page's own __bar rule), so it
+   needs the same flow-space compensation there. */
+.head-bar-spacer {
+  display: block;
+  height: 74px; /* measured .navbar-mobile height (48) + its top offset (space-3xl, 24) + border */
+}
 
 @media (min-width: 721px) {
   .head-bar-spacer {
-    display: block;
     height: 62px; /* measured .navbar pill height (padding + border + line-height) */
   }
 }
@@ -137,6 +149,11 @@ body.page-exit {
   right: 0;
   height: 128px;
   background: linear-gradient(to bottom, var(--bg-primary) 0%, var(--bg-primary) 40%, transparent 100%);
+  /* Frosts whatever's scrolling underneath the pinned nav instead of just
+     fading it — the gradient alone made the cutoff soft, this makes it read
+     as glass. Falls back to the plain gradient where unsupported. */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 15;
   opacity: 0;
   pointer-events: none;
@@ -144,10 +161,6 @@ body.page-exit {
 }
 
 body.is-scrolled .scroll-shade { opacity: 1; }
-
-@media (max-width: 720px) {
-  .scroll-shade { display: none; }
-}
 
 /* ==========================================================================
    Navbar (Desktop) — active section: Discover
@@ -164,8 +177,13 @@ body.is-scrolled .scroll-shade { opacity: 1; }
   height: auto;
 }
 
+/* Fixed at every width — the nav pill stays pinned to the viewport as the
+   page scrolls, on phone as much as desktop, so the logo (below) has a fixed
+   home to animate into and .scroll-shade's blur has an actual sticky bar to
+   back. Was absolute-on-phone before; that let the mobile bar scroll away
+   with the hero instead of staying put. */
 .navbar-wrap {
-  position: absolute;
+  position: fixed;
   top: var(--space-4xl);
   left: 0;
   right: 0;
@@ -178,13 +196,6 @@ body.is-scrolled .scroll-shade { opacity: 1; }
      chevrons, at 5, are the highest) — otherwise a pinned nav with a lower
      z-index can end up buried under scrolling content instead of above it. */
   z-index: 20;
-}
-
-/* Desktop: the nav pill stays pinned to the viewport while the page scrolls,
-   so the logo (below) has a fixed home to animate into. Absolute on phone —
-   the mobile bar still scrolls away with the hero, unchanged. */
-@media (min-width: 721px) {
-  .navbar-wrap { position: fixed; }
 }
 
 /* Hidden at rest — the hero picture already carries the wordmark. Revealed
@@ -1814,9 +1825,90 @@ body.is-scrolled .navbar {
   border-radius: 50%;
 }
 
+/* Fills whatever box it's dropped into (card media, logo slot, photo frame),
+   inheriting that box's own corner radius. */
+.eu-skeleton--fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+}
+
+/* Chip-shaped, for tag/filter rows that are still loading. */
+.eu-skeleton--chip {
+  width: 76px;
+  height: 28px;
+  min-width: 0;
+  border-radius: var(--radius-3xl);
+}
+
 @keyframes eu-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) { .eu-skeleton { animation: none; } }
+
+/* A loading card is inert: no hover affordances, nothing to click, and it
+   never announces its shimmer to a screen reader (the markup carries
+   aria-hidden; this just makes the visual state match). */
+.card--loading,
+.org-card--loading,
+.profile-card--loading { pointer-events: none; }
+
+/* ==========================================================================
+   EMPTY STATE
+   What replaces a skeleton when the answer is genuinely "nothing here" —
+   an empty table, a failed fetch, or a backend that isn't reachable. Never
+   left on screen at the same time as a shimmer.
+   ========================================================================== */
+
+.eu-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: var(--space-4xl) var(--space-3xl);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+/* ---- Loading states for the two single-instance components ---- */
+
+/* Featured hero: the photo and the title are the only things that vary, so
+   the frame stays and just its contents shimmer until the event lands. */
+.featured[data-loading] .featured__photo { visibility: hidden; }
+
+.featured[data-loading] .featured__media {
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(90deg, var(--colour-gray-500) 25%,
+                                     var(--colour-gray-600) 37%,
+                                     var(--colour-gray-500) 63%);
+  background-size: 400% 100%;
+  animation: eu-shimmer 1.2s ease infinite;
+}
+
+.profile-card[data-loading] .profile-card__photo {
+  background: linear-gradient(90deg, var(--colour-gray-500) 25%,
+                                     var(--colour-gray-600) 37%,
+                                     var(--colour-gray-500) 63%);
+  background-size: 400% 100%;
+  animation: eu-shimmer 1.2s ease infinite;
+}
+
+/* Event Details cover banner — same treatment while the event is in flight. */
+.banner[data-loading] .banner__photo { visibility: hidden; }
+
+.banner[data-loading] {
+  background: linear-gradient(90deg, var(--colour-gray-500) 25%,
+                                     var(--colour-gray-600) 37%,
+                                     var(--colour-gray-500) 63%);
+  background-size: 400% 100%;
+  animation: eu-shimmer 1.2s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured[data-loading] .featured__media,
+  .profile-card[data-loading] .profile-card__photo,
+  .banner[data-loading] { animation: none; }
+}
 
 /* ==========================================================================
    MODAL (public pages)

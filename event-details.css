@@ -58,12 +58,18 @@
    Profile headers, for a consistent nav position site-wide (this used to be
    a flex row with a fixed gap instead, which drifted out of alignment with
    the other pages' centred pill). */
+/* Fixed at every width now, not just desktop — mobile insets (14px either
+   side, matching the old [data-menu-open] fixed state) below; desktop
+   overrides to the shared full-width bounds. */
 .detail-head__bar {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  position: fixed;
+  top: var(--space-3xl);
+  left: 14px;
+  right: 14px;
+  display: block;
+  /* Above every page's z-indexed content (Profile's carousel chevrons, at
+     5, are the highest) — see styles.css .navbar-wrap for the full note. */
+  z-index: 20;
 }
 
 /* Pinned header (desktop): same top offset and horizontal bounds as every
@@ -71,16 +77,15 @@
    consistent place site-wide while scrolling. */
 @media (min-width: 721px) {
   .detail-head__bar {
-    position: fixed;
     top: var(--space-4xl);
     left: 0;
     right: 0;
     max-width: 1440px;
     margin-inline: auto;
     padding-inline: var(--space-5xl);
-    /* Above every page's z-indexed content (Profile's carousel chevrons, at
-       5, are the highest) — see styles.css .navbar-wrap for the full note. */
-    z-index: 20;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
   }
 }
 

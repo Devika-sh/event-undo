@@ -156,11 +156,10 @@
   /* Logo + desktop navbar out; the Mobile Nav Bar carries its own wordmark. */
   .team-head__bar { display: none; }
 
-  /* The bar sits in normal flow above the title here, not floated over a
-     masthead as on Discover — so the shared wrap's absolute placement is
-     dropped. The open-menu takeover keeps its fixed positioning. */
+  /* Unlike Discover this bar sits above the title rather than floating over
+     a masthead, but it's fixed the same way now — see styles.css's shared
+     .navbar-wrap rule and .head-bar-spacer for the flow-space it reserves. */
   .team-page .navbar-wrap { display: flex; }
-  .team-page .navbar-wrap:not([data-menu-open]) { position: static; }
 
   /* Display l/Medium (48) — the frame steps the weight up from Regular. */
   .team-head__title { font-weight: var(--font-weight-medium); }
