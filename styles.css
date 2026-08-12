@@ -475,6 +475,7 @@ body.is-scrolled .navbar {
 }
 
 .card {
+  position: relative;    /* anchor for the stretched card__link */
   width: 100%;
   max-width: 400px;      /* card is 400 wide per spec; height hugs */
   display: flex;
@@ -490,6 +491,22 @@ body.is-scrolled .navbar {
   box-shadow: inset calc(-1 * var(--width-2xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand);
   border-radius: var(--radius-2xl);
 }
+
+/* The whole card opens the event, not just the photo: one transparent overlay
+   link stretched across it. Sits above the media and details but below the
+   heart, so saving still works without leaving the grid. It carries no visible
+   content — the aria-label names it — and takes the browser's default focus
+   ring, drawn on the card's own radius. */
+.card__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* Card / hover — bg-hover as a subtle surface cue; border stays border-brand.
+   Only cards that lead somewhere react, so a static placeholder stays inert. */
+.card:has(.card__link):hover { background: var(--bg-hover); }
 
 /* --- 1. Media block (Image / Card variant) --- */
 
@@ -542,6 +559,7 @@ body.is-scrolled .navbar {
    (nearest tokens would be space/lg 12 and space/xl 16). */
 .like-btn {
   position: absolute;
+  z-index: 2;            /* stays clickable through the card__link overlay */
   top: 14px;
   right: 13px;
   width: 35px;

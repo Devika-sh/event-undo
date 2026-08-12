@@ -98,11 +98,11 @@ function cardMarkup(event) {
 
   return `
   <article class="card" data-event="${esc(event.id)}">
+    <a class="card__link" href="event-details.html?id=${encodeURIComponent(event.id)}"
+       aria-label="View ${title}"></a>
     <div class="card__media">
-      <a href="event-details.html?id=${encodeURIComponent(event.id)}" aria-label="${title}">
-        <img class="card__photo" src="${esc(event.banner_url || FALLBACK_IMAGE)}" alt=""
-             width="360" height="300" loading="lazy" />
-      </a>
+      <img class="card__photo" src="${esc(event.banner_url || FALLBACK_IMAGE)}" alt=""
+           width="360" height="300" loading="lazy" />
       <div class="card__scrim paint-blur">
         <p class="card__event-title">${title}</p>
         <p class="card__organizer">by ${esc(event.organizer || 'eventundo')}</p>
