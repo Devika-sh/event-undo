@@ -57,7 +57,7 @@ const HEART_SVG = `
     </g>
   </svg>`;
 
-const FALLBACK_IMAGE = 'Assets/Event Card Image.png';
+const FALLBACK_IMAGE = 'Assets/eventundo-fallback.png';
 
 function toast(message) {
   let host = document.querySelector('.eu-toasts');
@@ -203,8 +203,8 @@ function hydrateFeatured() {
   const title = document.querySelector('.featured__title');
   const photo = document.querySelector('.featured__photo');
   if (title) title.textContent = featured.title;
-  if (photo && featured.banner_url) {
-    photo.src = featured.banner_url;
+  if (photo) {
+    photo.src = featured.banner_url || FALLBACK_IMAGE;
     photo.alt = featured.title;
   }
 
@@ -413,8 +413,8 @@ async function hydrateEventDetails() {
   set('.event-head__org', 'by ' + (event.organizer || 'eventundo'));
 
   const banner = document.querySelector('.banner__photo');
-  if (banner && event.banner_url) {
-    banner.src = event.banner_url;
+  if (banner) {
+    banner.src = event.banner_url || FALLBACK_IMAGE;
     banner.alt = event.title;
   }
 

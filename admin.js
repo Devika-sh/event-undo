@@ -642,7 +642,7 @@ function eventForm(ev = {}) {
       <div class="a-field">
         <label class="a-field__label" for="ev-banner">Banner image URL</label>
         <input class="a-input" id="ev-banner" value="${esc(ev.banner_url || '')}"
-               placeholder="Assets/Event Card Image.png" />
+               placeholder="Leave blank to use the eventundo fallback image" />
         <span class="a-field__hint">Or upload below to the <code>media</code> bucket.</span>
       </div>
       <div class="a-field">
