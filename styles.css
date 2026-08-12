@@ -281,6 +281,17 @@ body.is-scrolled .navbar {
   overflow: hidden;
 }
 
+/* The whole card opens the event, not just the "View event" button — same
+   transparent-overlay pattern as the grid's own .card__link. Sits under the
+   button (desktop) so the button keeps its own independent hit target;
+   on mobile the button is hidden entirely and this is the only way in. */
+.featured__card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
 .featured__body {
   display: flex;
   flex-direction: column;
@@ -1087,6 +1098,14 @@ body.is-scrolled .navbar {
     line-height: var(--line-height-heading-h6);
   }
 
+  /* No room for a separate "View event" button at this scale, and it's
+     redundant besides — .featured__card-link already makes the whole card
+     tap through to the event. Two classes, not one: the base .featured__link
+     rule (styles.css, further down) is unconditional and comes later in the
+     cascade, so a same-specificity override here would lose to it despite
+     the media condition. */
+  .featured .featured__link { display: none; }
+
   /* --- Search row: bar + filter button share one 48-tall row --- */
   .search-wrap {
     margin-top: var(--space-3xl);
@@ -1306,8 +1325,12 @@ body.is-scrolled .navbar {
   font-size: var(--font-size-body-sm);
 }
 
-/* "View event" under the featured title — a Secondary Button at card scale. */
+/* "View event" under the featured title — a Secondary Button at card scale.
+   Sits above .featured__card-link's overlay (z-index 1) so it keeps its own
+   independent hit target instead of the card fighting it for the click. */
 .featured__link {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
