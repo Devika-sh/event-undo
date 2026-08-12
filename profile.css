@@ -351,8 +351,6 @@
   padding: 0 var(--space-4xl) var(--space-5xl);
 }
 
-.auth-panel[hidden] { display: none; }
-
 .auth-panel__box {
   width: 100%;
   max-width: 420px;
@@ -392,8 +390,6 @@
   font-weight: var(--font-weight-medium);
 }
 
-.auth-panel__reason[hidden] { display: none; }
-
 .auth-panel__switch {
   margin: var(--space-3xl) 0 0;
   text-align: center;
@@ -417,8 +413,6 @@
   margin-top: var(--space-2xl);
   text-align: left;
 }
-
-.profile-edit[hidden] { display: none; }
 
 .profile-edit__actions {
   display: flex;

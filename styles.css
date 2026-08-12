@@ -18,6 +18,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* The UA's own `[hidden] { display: none }` is a bare attribute selector, so any
+   class that sets `display` outranks it — `.profile-row { display: grid }` kept
+   the whole card visible while JS thought it had hidden it. Anything toggled by
+   the `hidden` attribute goes through here, so state the intent once, loudly,
+   rather than remembering a `[hidden]` override on every new component. */
+[hidden] { display: none !important; }
+
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 ul { margin: 0; padding: 0; list-style: none; }
@@ -1401,5 +1408,3 @@ body.is-scrolled .navbar {
   color: var(--colour-orange-700);
   font-size: var(--font-size-body-2xs);
 }
-
-.a-form__error[hidden] { display: none; }
