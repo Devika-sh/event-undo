@@ -37,22 +37,35 @@ create table if not exists public.organizations (
 );
 
 create table if not exists public.profiles (
-  id              uuid primary key references auth.users(id) on delete cascade,
-  email           text,
-  full_name       text,
-  avatar_url      text,
-  bio             text,
-  phone           text,
-  role            text not null default 'user'
-                    check (role in ('admin','volunteer','user')),
-  organization_id uuid references public.organizations(id) on delete set null,
-  status          text not null default 'active'
-                    check (status in ('active','suspended')),
-  instagram_url   text,
-  linkedin_url    text,
-  created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now()
+  id                       uuid primary key references auth.users(id) on delete cascade,
+  email                    text,
+  full_name                text,
+  avatar_url               text,
+  bio                      text,
+  phone                    text,
+  department               text,
+  semester                 text,
+  role                     text not null default 'user'
+                             check (role in ('admin','volunteer','user')),
+  -- Staff affiliation — the org a volunteer/admin manages events for.
+  organization_id          uuid references public.organizations(id) on delete set null,
+  -- A plain user's own pick, purely a personalisation signal — distinct from
+  -- organization_id above, which drives event/org edit permissions.
+  favorite_organization_id uuid references public.organizations(id) on delete set null,
+  status                   text not null default 'active'
+                             check (status in ('active','suspended')),
+  instagram_url            text,
+  linkedin_url             text,
+  created_at               timestamptz not null default now(),
+  updated_at               timestamptz not null default now()
 );
+
+-- Added after the initial release — safe to re-run against a database that
+-- already has profiles without them.
+alter table public.profiles add column if not exists department text;
+alter table public.profiles add column if not exists semester text;
+alter table public.profiles add column if not exists favorite_organization_id
+  uuid references public.organizations(id) on delete set null;
 
 -- Filter chips on Discover + interest chips on the profile card.
 -- `group_name` maps to the separated groups in the filter row.
@@ -178,6 +191,7 @@ create index if not exists events_org_idx         on public.events (organization
 create index if not exists profiles_role_idx      on public.profiles (role);
 create index if not exists activity_created_idx   on public.activity_log (created_at desc);
 create index if not exists team_members_org_idx   on public.team_members (organization_id);
+create index if not exists profiles_fav_org_idx    on public.profiles (favorite_organization_id);
 
 -- --------------------------------------------------------------------------
 -- 2. Helper functions

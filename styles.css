@@ -1535,3 +1535,72 @@ body.is-scrolled .navbar {
 @keyframes eu-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) { .eu-skeleton { animation: none; } }
+
+/* ==========================================================================
+   MODAL (public pages)
+   A lightweight pop-up dialog for the profile edit form — same idea as the
+   admin console's .a-modal, rebuilt here with the FORM KIT tokens above so a
+   public page doesn't have to load admin.css for one dialog.
+   ========================================================================== */
+
+.eu-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  background: var(--colour-alpha-70);
+}
+.eu-modal[hidden] { display: none; }
+
+.eu-modal__box {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - var(--space-4xl));
+  overflow-y: auto;
+  background: var(--bg-white);
+  border: var(--width-lg) solid var(--border-brand);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3xl);
+}
+
+.eu-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-2xl);
+}
+
+.eu-modal__title {
+  margin: 0;
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h6);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-primary);
+}
+
+.eu-modal__close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+.eu-modal__close:hover { background: var(--bg-hover); color: var(--text-brand); }
+
+.eu-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-2xl);
+}

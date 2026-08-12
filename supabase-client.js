@@ -27,9 +27,12 @@ export async function getSession() {
 export async function getProfile() {
   const session = await getSession();
   if (!session) return null;
+  // profiles has two FKs into organizations (organization_id for staff
+  // affiliation, favorite_organization_id for a user's own pick) — hint
+  // which one this embed follows, or PostgREST can't resolve it.
   const { data, error } = await supabase
     .from('profiles')
-    .select('*, organizations(id, name, slug)')
+    .select('*, organizations!organization_id(id, name, slug)')
     .eq('id', session.user.id)
     .maybeSingle();
   if (error) { console.warn('[eventundo] profile load failed:', error.message); return null; }

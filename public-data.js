@@ -567,21 +567,26 @@ async function hydrateProfile() {
   // Finish whatever the user was doing before they got sent here to sign in.
   await applyPendingSave();
 
-  const [profile, categories, interests, saves] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', me.id).maybeSingle(),
+  const [profile, categories, interests, saves, orgs] = await Promise.all([
+    // profiles has two FKs into organizations (organization_id for staff
+    // affiliation, favorite_organization_id for this pick), so the embed
+    // must be hinted or PostgREST can't tell which relationship to follow.
+    supabase.from('profiles').select('*, organizations!favorite_organization_id(name)').eq('id', me.id).maybeSingle(),
     supabase.from('categories').select('*').eq('is_active', true)
       .eq('group_name', 'topic').order('sort_order'),
     supabase.from('user_interests').select('category_id').eq('user_id', me.id),
-    supabase.from('event_saves').select('event_id').eq('user_id', me.id)
+    supabase.from('event_saves').select('event_id').eq('user_id', me.id),
+    supabase.from('organizations').select('id, name').eq('is_active', true).order('name')
   ]);
 
   // The card shows the picks; the edit form is where they get changed.
   const topics = categories.data || [];
   const mine = new Set((interests.data || []).map((i) => i.category_id));
+  const orgList = orgs.data || [];
 
   paintProfileCard(profile.data);
   paintInterests(topics, mine);
-  wireProfileEdit(profile.data, topics, mine);
+  wireProfileEdit(profile.data, topics, mine, orgList);
 
   // Saved + upcoming events replace the placeholder fan.
   const fan = document.querySelector('.events-fan');
@@ -624,6 +629,20 @@ function paintProfileCard(profile) {
     photo.innerHTML = `<img src="${esc(profile.avatar_url)}" alt="" />`;
   }
 
+  // Department/semester + favourite organisation — same badge treatment as
+  // the org highlight on the team roster card.
+  const role = document.querySelector('#profile-role');
+  if (role) {
+    const line = [profile?.department, profile?.semester ? `Semester ${profile.semester}` : null]
+      .filter(Boolean).join(' · ');
+    const orgName = profile?.organizations?.name;
+    role.innerHTML = [
+      line ? esc(line) : '',
+      orgName ? `<span class="profile-card__org">${esc(orgName)}</span>` : ''
+    ].filter(Boolean).join('');
+    role.hidden = !line && !orgName;
+  }
+
   // Only show a social link the user actually filled in.
   const socials = document.querySelector('.profile-card__socials');
   if (socials) {
@@ -653,25 +672,23 @@ function paintInterests(topics, mine) {
   row.hidden = picked.length === 0;
 }
 
-/* ---- Edit mode ----------------------------------------------------------- */
-
-/** Elements the edit form stands in for. The photo deliberately stays put so
- *  the user can see what they're changing. */
-const VIEW_PARTS = '.profile-card__name, .profile-card__socials, .profile-card__interests, .eu-signout';
-
-/** Of those, the ones that are legitimately empty for a new user. */
-const EMPTY_WHEN_UNSET = ['profile-card__socials', 'profile-card__interests'];
+/* ---- Edit mode (pop-up) --------------------------------------------------- */
 
 /** How many interests a user may pick. */
 const MAX_INTERESTS = 5;
 
-function wireProfileEdit(profile, topics, mine) {
+function wireProfileEdit(profile, topics, mine, orgs) {
   const toggle = document.querySelector('.edit-btn');
+  const modal = document.getElementById('profile-edit-modal');
   const form = document.getElementById('profile-edit');
-  if (!toggle || !form) return;
+  if (!toggle || !modal || !form) return;
 
   const picker = document.getElementById('pe-interests');
   const counter = document.getElementById('pe-interests-count');
+  const orgSelect = document.getElementById('pe-org');
+
+  orgSelect.innerHTML = '<option value="">None</option>' +
+    orgs.map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
 
   const selectedIds = () =>
     [...picker.querySelectorAll('.chip--selected')].map((c) => c.dataset.cat);
@@ -706,37 +723,39 @@ function wireProfileEdit(profile, topics, mine) {
     refreshPicker();
   });
 
-  const setEditing = (on) => {
-    toggle.setAttribute('aria-pressed', String(on));
-    toggle.setAttribute('aria-label', on ? 'Cancel editing' : 'Edit profile');
-    form.hidden = !on;
-    document.querySelectorAll(VIEW_PARTS).forEach((el) => {
-      // Socials and interests render nothing until the user fills them in.
-      // Those stay hidden on the way back out, so leaving edit mode doesn't
-      // reopen an empty gap in the card.
-      const emptyContainer = EMPTY_WHEN_UNSET.some((c) => el.classList.contains(c))
-                             && !el.children.length;
-      el.hidden = on || emptyContainer;
-    });
-  };
-
-  const fill = () => {
+  const openEditor = () => {
     document.getElementById('pe-name').value = profile?.full_name || '';
+    document.getElementById('pe-email').value = profile?.email || me.email || '';
+    document.getElementById('pe-phone').value = profile?.phone || '';
+    document.getElementById('pe-department').value = profile?.department || '';
+    document.getElementById('pe-semester').value = profile?.semester || '';
+    orgSelect.value = profile?.favorite_organization_id || '';
     document.getElementById('pe-bio').value = profile?.bio || '';
     document.getElementById('pe-instagram').value = profile?.instagram_url || '';
     document.getElementById('pe-linkedin').value = profile?.linkedin_url || '';
     document.getElementById('pe-photo').value = '';
     buildPicker();   // rebuilt each time, so Cancel really does discard
     setFormError('profile-error', '');
+
+    toggle.setAttribute('aria-pressed', 'true');
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('pe-name').focus();
   };
 
-  toggle.addEventListener('click', () => {
-    const opening = toggle.getAttribute('aria-pressed') !== 'true';
-    if (opening) fill();
-    setEditing(opening);
-  });
+  const closeEditor = () => {
+    toggle.setAttribute('aria-pressed', 'false');
+    modal.hidden = true;
+    document.body.style.overflow = '';
+  };
 
-  document.getElementById('pe-cancel').addEventListener('click', () => setEditing(false));
+  toggle.addEventListener('click', openEditor);
+  document.getElementById('pe-close').addEventListener('click', closeEditor);
+  document.getElementById('pe-cancel').addEventListener('click', closeEditor);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeEditor(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hidden) closeEditor();
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -748,6 +767,10 @@ function wireProfileEdit(profile, topics, mine) {
 
     const payload = {
       full_name: document.getElementById('pe-name').value.trim() || null,
+      phone: document.getElementById('pe-phone').value.trim() || null,
+      department: document.getElementById('pe-department').value.trim() || null,
+      semester: document.getElementById('pe-semester').value || null,
+      favorite_organization_id: orgSelect.value || null,
       bio: document.getElementById('pe-bio').value.trim() || null,
       instagram_url: document.getElementById('pe-instagram').value.trim() || null,
       linkedin_url: document.getElementById('pe-linkedin').value.trim() || null
@@ -796,9 +819,12 @@ function wireProfileEdit(profile, topics, mine) {
     save.textContent = 'Save';
 
     Object.assign(profile, payload);
+    profile.organizations = orgSelect.value
+      ? { name: orgSelect.options[orgSelect.selectedIndex].textContent }
+      : null;
     paintProfileCard(profile);
     paintInterests(topics, mine);
-    setEditing(false);
+    closeEditor();
     toast('Profile updated');
   });
 }

@@ -402,31 +402,23 @@
 
 /* ==========================================================================
    Edit-your-details form
-   Lives inside the Profile Card and swaps in when the Edit Button is active.
-   The photo stays visible above it as a live preview.
+   Opens in the shared .eu-modal pop-up (styles.css) rather than inline in
+   the card, so a long form never has to fight the card's own layout.
    ========================================================================== */
 
 .profile-edit {
-  align-self: stretch;
   display: grid;
   gap: var(--space-xl);
-  margin-top: var(--space-2xl);
   text-align: left;
 }
 
 .profile-edit__actions {
   display: flex;
   gap: var(--space-lg);
+  margin-top: var(--space-md);
 }
 
 .profile-edit__actions .a-btn { flex: 1; }
-
-/* The card clips its content, so a tall edit form has to scroll inside it
-   rather than push the brand edge off the bottom. */
-.profile-card:has(.profile-edit:not([hidden])) {
-  min-height: 0;
-  overflow-y: auto;
-}
 
 @media (max-width: 720px) {
   .auth-panel { padding: 0 var(--space-2xl) var(--space-4xl); }

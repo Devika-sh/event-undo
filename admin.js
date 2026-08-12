@@ -1088,7 +1088,10 @@ async function loadPeople() {
   $('#users-rows').innerHTML = skeletonRows(7);
 
   const [people, saves, rsvps, interests] = await Promise.all([
-    supabase.from('profiles').select('*, organizations(name)').order('created_at', { ascending: false }),
+    // profiles now has two FKs into organizations (organization_id for staff
+    // affiliation, favorite_organization_id for a user's own pick) — hint
+    // which one, or PostgREST can't resolve the embed.
+    supabase.from('profiles').select('*, organizations!organization_id(name)').order('created_at', { ascending: false }),
     supabase.from('event_saves').select('user_id'),
     supabase.from('event_rsvps').select('user_id, response'),
     supabase.from('user_interests').select('user_id, categories(name)')
@@ -1394,7 +1397,7 @@ async function loadRegistrations() {
 
   const { data, error } = await supabase
     .from('event_rsvps')
-    .select('id, response, created_at, event_id, profiles(full_name, email, organizations(name))')
+    .select('id, response, created_at, event_id, profiles(full_name, email, organizations!organization_id(name))')
     .order('created_at', { ascending: false });
 
   if (error) { fail(error, 'loading registrations'); return; }

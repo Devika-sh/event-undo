@@ -175,6 +175,10 @@
         </svg>
       </div>
 
+      <!-- Department / semester line + favourite organisation badge. Empty
+           until the user fills them in via the edit pop-up. -->
+      <p class="profile-card__role" id="profile-role" hidden></p>
+
       <div class="profile-card__socials">
         <a href="#" aria-label="Lionel Messi on Instagram">
           <span class="profile-card__social-icon profile-card__social-icon--instagram icon-mask"></span>
@@ -192,54 +196,104 @@
         <button class="chip" type="button">Startups</button>
         <button class="chip" type="button">Tech Talks</button>
       </div>
-
-      <!-- Edit mode. The Edit Button above swaps this in for the name, socials
-           and interests; the photo stays put as a preview. -->
-      <form class="profile-edit" id="profile-edit" hidden>
-        <p class="a-form__error" id="profile-error" hidden role="alert"></p>
-
-        <div class="a-field">
-          <label class="a-field__label" for="pe-name">Full name</label>
-          <input class="a-input" id="pe-name" type="text" />
-        </div>
-
-        <div class="a-field">
-          <label class="a-field__label" for="pe-photo">Profile photo</label>
-          <input class="a-input" id="pe-photo" type="file" accept="image/*" />
-          <span class="a-field__hint">Square images look best.</span>
-        </div>
-
-        <!-- Interests. Options come from the categories the dashboard manages,
-             so the chips here and the filter chips on Discover are the same
-             vocabulary. Capped at five — see MAX_INTERESTS in public-data.js. -->
-        <div class="a-field">
-          <span class="a-field__label" id="pe-interests-label">Interests</span>
-          <div class="a-chips" id="pe-interests" role="group"
-               aria-labelledby="pe-interests-label"></div>
-          <span class="a-field__hint" id="pe-interests-count"></span>
-        </div>
-
-        <div class="a-field">
-          <label class="a-field__label" for="pe-bio">Bio</label>
-          <textarea class="a-textarea" id="pe-bio" style="min-height:80px"></textarea>
-        </div>
-
-        <div class="a-field">
-          <label class="a-field__label" for="pe-instagram">Instagram</label>
-          <input class="a-input" id="pe-instagram" type="url" placeholder="https://instagram.com/…" />
-        </div>
-
-        <div class="a-field">
-          <label class="a-field__label" for="pe-linkedin">LinkedIn</label>
-          <input class="a-input" id="pe-linkedin" type="url" placeholder="https://linkedin.com/in/…" />
-        </div>
-
-        <div class="profile-edit__actions">
-          <button class="a-btn a-btn--ghost" type="button" id="pe-cancel">Cancel</button>
-          <button class="a-btn" type="submit" id="pe-save">Save</button>
-        </div>
-      </form>
     </section>
+
+    <!-- Edit pop-up. The Edit Button above opens this over the page; the
+         profile card behind it is untouched until Save. -->
+    <div class="eu-modal" id="profile-edit-modal" hidden role="dialog" aria-modal="true"
+         aria-labelledby="profile-edit-title">
+      <div class="eu-modal__box">
+        <div class="eu-modal__head">
+          <h2 class="eu-modal__title" id="profile-edit-title">Edit your profile</h2>
+          <button class="eu-modal__close" type="button" id="pe-close" aria-label="Close">&times;</button>
+        </div>
+
+        <form class="a-form profile-edit" id="profile-edit">
+          <p class="a-form__error" id="profile-error" hidden role="alert"></p>
+
+          <div class="a-field">
+            <label class="a-field__label" for="pe-name">Full name</label>
+            <input class="a-input" id="pe-name" type="text" />
+          </div>
+
+          <div class="a-form__row">
+            <div class="a-field">
+              <label class="a-field__label" for="pe-email">Email</label>
+              <input class="a-input" id="pe-email" type="email" disabled />
+              <span class="a-field__hint">Changing your sign-in email happens through account recovery.</span>
+            </div>
+            <div class="a-field">
+              <label class="a-field__label" for="pe-phone">Phone</label>
+              <input class="a-input" id="pe-phone" type="tel" />
+            </div>
+          </div>
+
+          <div class="a-form__row">
+            <div class="a-field">
+              <label class="a-field__label" for="pe-department">Department</label>
+              <input class="a-input" id="pe-department" type="text" placeholder="Computer Science" />
+            </div>
+            <div class="a-field">
+              <label class="a-field__label" for="pe-semester">Semester</label>
+              <select class="a-select" id="pe-semester">
+                <option value="">Not set</option>
+                <option value="1">Semester 1</option>
+                <option value="2">Semester 2</option>
+                <option value="3">Semester 3</option>
+                <option value="4">Semester 4</option>
+                <option value="5">Semester 5</option>
+                <option value="6">Semester 6</option>
+                <option value="7">Semester 7</option>
+                <option value="8">Semester 8</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="pe-org">Favourite organisation</label>
+            <select class="a-select" id="pe-org">
+              <option value="">None</option>
+            </select>
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="pe-photo">Profile photo</label>
+            <input class="a-input" id="pe-photo" type="file" accept="image/*" />
+            <span class="a-field__hint">Square images look best.</span>
+          </div>
+
+          <!-- Interests. Options come from the categories the dashboard manages,
+               so the chips here and the filter chips on Discover are the same
+               vocabulary. Capped at five — see MAX_INTERESTS in public-data.js. -->
+          <div class="a-field">
+            <span class="a-field__label" id="pe-interests-label">Interests</span>
+            <div class="a-chips" id="pe-interests" role="group"
+                 aria-labelledby="pe-interests-label"></div>
+            <span class="a-field__hint" id="pe-interests-count"></span>
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="pe-bio">Bio</label>
+            <textarea class="a-textarea" id="pe-bio" style="min-height:80px"></textarea>
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="pe-instagram">Instagram</label>
+            <input class="a-input" id="pe-instagram" type="url" placeholder="https://instagram.com/…" />
+          </div>
+
+          <div class="a-field">
+            <label class="a-field__label" for="pe-linkedin">LinkedIn</label>
+            <input class="a-input" id="pe-linkedin" type="url" placeholder="https://linkedin.com/in/…" />
+          </div>
+
+          <div class="profile-edit__actions">
+            <button class="a-btn a-btn--ghost" type="button" id="pe-cancel">Cancel</button>
+            <button class="a-btn" type="submit" id="pe-save">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Upcoming Events — four Event Listing Cards fanned as a carousel. -->
     <section class="events-panel" aria-label="Upcoming events">
