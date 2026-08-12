@@ -1280,3 +1280,126 @@ body.is-scrolled .navbar {
 }
 
 .eu-signout:hover { border-color: var(--border-brand); color: var(--text-brand); }
+
+/* ==========================================================================
+   FORM KIT
+   Labelled inputs, selects, textareas and the pill button. Shared: the admin
+   console builds its editors from these, and the profile page's sign-in panel
+   and "edit your details" form use the same pieces. Lives here rather than in
+   admin.css so a public page doesn't have to load the whole dashboard
+   stylesheet to render one form.
+   ========================================================================== */
+
+.a-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-3xl);
+  border: var(--width-lg) solid transparent;
+  border-radius: var(--radius-full);
+  background: var(--bg-brand);
+  color: var(--text-white);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-body-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-body-sm);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.a-btn:hover { background: var(--colour-orange-600); }
+
+.a-btn--secondary {
+  background: transparent;
+  border-color: var(--border-brand);
+  color: var(--text-brand);
+}
+.a-btn--secondary:hover { background: var(--bg-hover); }
+
+.a-btn--ghost {
+  background: transparent;
+  border-color: var(--colour-gray-600);
+  color: var(--text-secondary);
+}
+.a-btn--ghost:hover { background: var(--bg-white); color: var(--text-primary); }
+
+.a-btn--danger { background: var(--colour-orange-700); }
+.a-btn--danger:hover { background: var(--colour-orange-800); }
+
+.a-btn--sm {
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--font-size-body-2xs);
+}
+
+.a-btn--block { width: 100%; }
+
+.a-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.a-form { display: grid; gap: var(--space-2xl); }
+
+.a-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-2xl);
+}
+
+.a-field { display: grid; gap: var(--space-md); }
+
+.a-field__label {
+  font-size: var(--font-size-body-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.a-field__hint {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-2xs);
+}
+
+.a-input,
+.a-select,
+.a-textarea {
+  width: 100%;
+  padding: var(--space-lg) var(--space-xl);
+  border: var(--width-lg) solid var(--colour-gray-600);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+  color: var(--text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-body-xs);
+  line-height: var(--line-height-body-md);
+}
+
+.a-input::placeholder, .a-textarea::placeholder { color: var(--text-tertiary); }
+
+.a-input:focus, .a-select:focus, .a-textarea:focus {
+  outline: none;
+  border-color: var(--border-brand);
+  border-width: var(--width-xl);
+  /* Compensate for the 1px the thicker border adds, so nothing shifts. */
+  padding: calc(var(--space-lg) - 1px) calc(var(--space-xl) - 1px);
+}
+
+.a-textarea { min-height: 110px; resize: vertical; }
+
+.a-select {
+  appearance: none;
+  padding-right: var(--space-4xl);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%237C7C7C' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-xl) center;
+}
+
+.a-form__error {
+  padding: var(--space-lg) var(--space-xl);
+  border: var(--width-lg) solid var(--border-brand);
+  border-radius: var(--radius-md);
+  background: var(--bg-hover);
+  color: var(--colour-orange-700);
+  font-size: var(--font-size-body-2xs);
+}
+
+.a-form__error[hidden] { display: none; }

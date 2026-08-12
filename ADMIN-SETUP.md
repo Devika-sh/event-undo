@@ -25,14 +25,27 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi…';
 Use the **anon public** key. It is meant to ship in the browser — RLS is what
 protects the data. Never put the `service_role` key in this file.
 
-## 3. Create the first account
+## 3. Create the first admin
 
-Open `admin-login.html` → "First time here? Create the owner account".
+Everyone — including you — signs up as a plain **user**. The first admin is
+promoted once, by hand. Two steps:
 
-On an empty database the first account to sign up becomes the **admin**;
-everyone after that is a plain user until an admin promotes them. If Supabase
-email confirmation is on (Authentication → Providers → Email), confirm the
-address before signing in.
+1. Open `profile.html` → **"New here? Create an account"** and sign up.
+   (If Supabase email confirmation is on under Authentication → Providers →
+   Email, confirm the address first. Turning it off is fine while developing,
+   and avoids the "email rate limit exceeded" error.)
+
+2. Back in the SQL Editor, run one statement with the address you used:
+
+   ```sql
+   update public.profiles set role = 'admin' where email = 'you@example.com';
+   ```
+
+Now sign in at `admin-login.html`. Every volunteer after this gets added from
+inside the dashboard — you never need this SQL again.
+
+> The console deliberately has no sign-up form. If sign-up were public *and*
+> "first account becomes admin", whoever registered first would own the site.
 
 ## Roles
 
@@ -73,8 +86,14 @@ key stays on the server.
 It is progressive enhancement: with no keys configured, or an empty table, each
 page keeps the static markup it already shipped with — nothing is blanked out.
 
-`account.html` is the public sign-in/sign-up page. While signed out, "Profile"
-in the nav points there instead.
+Signing in for regular users happens **on the Profile page itself** — signed
+out, `profile.html` shows a sign-in / sign-up panel in place of the profile
+card, and the nav link reads "Sign in". There is no separate account page, and
+the admin console does not accept regular users at all.
+
+Saving an event or RSVPing while signed out parks the action, sends the user to
+Profile to sign in, and then completes it — so a click on the heart is never
+silently dropped.
 
 ## Files
 
@@ -83,10 +102,9 @@ in the nav points there instead.
 | `supabase-schema.sql` | Tables, RLS, triggers, views, storage, seed data |
 | `supabase-config.js` | Your project URL + anon key (the only file to edit) |
 | `supabase-client.js` | Shared client, auth helpers, date/fee formatting |
-| `admin-login.html` | Console sign-in |
+| `admin-login.html` | Console sign-in (staff only — no sign-up) |
 | `admin.html` / `admin.js` / `admin.css` | The dashboard |
-| `account.html` | Public sign-in / sign-up |
-| `public-data.js` | Wires the public pages to the same data |
+| `public-data.js` | Wires the public pages to the same data, and runs the Profile page's sign-in / edit form |
 
 Design tokens come from `tokens.css` and shared components from `styles.css`,
 same as every other page — `admin.css` only adds the shell, tables, forms and

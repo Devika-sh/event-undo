@@ -69,14 +69,26 @@ function toast(message) {
   setTimeout(() => el.remove(), 3600);
 }
 
-/** Swaps the "Profile" nav entries for "Sign in" when nobody is signed in, so
- *  the site never sends a stranger to an empty profile page. */
+/** Profile is the one door into an account, so the nav keeps pointing there
+ *  whether or not there's a session — signed out, that page shows sign-in. */
 function paintAccountLink() {
   if (me) return;
   document.querySelectorAll('a[href="profile.html"]').forEach((link) => {
-    link.setAttribute('href', 'account.html');
     if (link.textContent.trim() === 'Profile') link.textContent = 'Sign in';
   });
+}
+
+/** Where an interrupted action parks itself while the user signs in. */
+const PENDING_SAVE = 'eventundo:pending-save';
+const PENDING_REASON = 'eventundo:pending-reason';
+
+function sendToSignIn(reason, pendingEventId) {
+  try {
+    sessionStorage.setItem(PENDING_REASON, reason);
+    if (pendingEventId) sessionStorage.setItem(PENDING_SAVE, pendingEventId);
+  } catch { /* private mode — the redirect still works, just without the note */ }
+  toast(reason);
+  setTimeout(() => { location.href = 'profile.html'; }, 700);
 }
 
 function cardMarkup(event) {
@@ -110,18 +122,34 @@ function cardMarkup(event) {
   </article>`;
 }
 
-/** One delegated handler covers every heart on the page, including cards that
- *  get re-rendered by a filter change. */
+/**
+ * One delegated handler covers every heart on the page, including cards that
+ * get re-rendered by a filter change.
+ *
+ * Runs in the CAPTURE phase so it beats the per-button listener each page
+ * attaches inline. When there's no session that listener must not run at all —
+ * otherwise the heart would visibly fill for a moment before the redirect,
+ * which reads as "saved" when nothing was.
+ */
 document.addEventListener('click', async (e) => {
-  const btn = e.target.closest('[data-save]');
+  const btn = e.target.closest('.like-btn');
   if (!btn) return;
 
+  // Saving needs an account. Park the event and send them to Profile to sign
+  // in; the save is applied for them once they're back.
   if (!me) {
-    toast('Sign in to save events');
+    e.preventDefault();
+    e.stopPropagation();
+    sendToSignIn('Sign in to save events', btn.dataset.save);
     return;
   }
 
+  // A heart on a static placeholder card has no event behind it — let the
+  // page's own listener handle the visual toggle and stay out of it.
   const id = btn.dataset.save;
+  if (!id) return;
+
+  e.stopPropagation();
   const nowSaved = btn.getAttribute('aria-pressed') !== 'true';
   btn.setAttribute('aria-pressed', String(nowSaved));
 
@@ -136,7 +164,7 @@ document.addEventListener('click', async (e) => {
   }
 
   if (nowSaved) savedIds.add(id); else savedIds.delete(id);
-});
+}, true);
 
 /* ==========================================================================
    Discover (index.html)
@@ -394,8 +422,7 @@ async function wireRsvp(event) {
     e.preventDefault();
 
     if (!me) {
-      toast('Sign in to register for this event');
-      setTimeout(() => { location.href = 'account.html?next=' + encodeURIComponent(location.href); }, 900);
+      sendToSignIn('Sign in to register for this event');
       return;
     }
 
@@ -444,7 +471,10 @@ async function hydrateMoreEvents(event) {
    ========================================================================== */
 
 async function hydrateProfile() {
-  if (!me) { location.replace('account.html?next=profile.html'); return; }
+  if (!me) { showAuthPanel(); return; }
+
+  // Finish whatever the user was doing before they got sent here to sign in.
+  await applyPendingSave();
 
   const [profile, categories, interests, saves] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', me.id).maybeSingle(),
@@ -454,14 +484,8 @@ async function hydrateProfile() {
     supabase.from('event_saves').select('event_id').eq('user_id', me.id)
   ]);
 
-  const nameEl = document.querySelector('.profile-card__name');
-  if (nameEl) nameEl.textContent = profile.data?.full_name || me.email;
-
-  const photo = document.querySelector('.profile-card__photo');
-  if (photo && profile.data?.avatar_url) {
-    photo.classList.remove('profile-card__photo--empty');
-    photo.innerHTML = `<img src="${esc(profile.data.avatar_url)}" alt="" />`;
-  }
+  paintProfileCard(profile.data);
+  wireProfileEdit(profile.data);
 
   // Interests: every topic chip, the user's own picks pre-selected. Clicking
   // one writes straight through, so there is no save button to forget.
@@ -517,4 +541,235 @@ function addSignOut() {
     location.href = 'index.html';
   });
   card.append(btn);
+}
+
+function paintProfileCard(profile) {
+  const nameEl = document.querySelector('.profile-card__name');
+  if (nameEl) nameEl.textContent = profile?.full_name || me.email;
+
+  const photo = document.querySelector('.profile-card__photo');
+  if (photo && profile?.avatar_url) {
+    photo.classList.remove('profile-card__photo--empty');
+    photo.innerHTML = `<img src="${esc(profile.avatar_url)}" alt="" />`;
+  }
+
+  // Only show a social link the user actually filled in.
+  const socials = document.querySelector('.profile-card__socials');
+  if (socials) {
+    const links = [
+      ['instagram', profile?.instagram_url, 'on Instagram'],
+      ['linkedin',  profile?.linkedin_url,  'on LinkedIn']
+    ].filter(([, url]) => url);
+
+    socials.innerHTML = links.map(([kind, url, label]) => `
+      <a href="${esc(url)}" target="_blank" rel="noopener"
+         aria-label="${esc(profile?.full_name || 'This user')} ${label}">
+        <span class="profile-card__social-icon profile-card__social-icon--${kind} icon-mask"></span>
+      </a>`).join('');
+    socials.hidden = links.length === 0;
+  }
+}
+
+/* ---- Edit mode ----------------------------------------------------------- */
+
+/** Elements the edit form stands in for. The photo deliberately stays put so
+ *  the user can see what they're changing. */
+const VIEW_PARTS = '.profile-card__name, .profile-card__socials, .profile-card__interests, .eu-signout';
+
+function wireProfileEdit(profile) {
+  const toggle = document.querySelector('.edit-btn');
+  const form = document.getElementById('profile-edit');
+  if (!toggle || !form) return;
+
+  const setEditing = (on) => {
+    toggle.setAttribute('aria-pressed', String(on));
+    toggle.setAttribute('aria-label', on ? 'Cancel editing' : 'Edit profile');
+    form.hidden = !on;
+    document.querySelectorAll(VIEW_PARTS).forEach((el) => {
+      // .profile-card__socials manages its own hidden state when empty, so
+      // only re-show it if there was something in it to begin with.
+      if (el.classList.contains('profile-card__socials') && !el.children.length) return;
+      el.hidden = on;
+    });
+  };
+
+  const fill = () => {
+    document.getElementById('pe-name').value = profile?.full_name || '';
+    document.getElementById('pe-bio').value = profile?.bio || '';
+    document.getElementById('pe-instagram').value = profile?.instagram_url || '';
+    document.getElementById('pe-linkedin').value = profile?.linkedin_url || '';
+    document.getElementById('pe-photo').value = '';
+    setFormError('profile-error', '');
+  };
+
+  toggle.addEventListener('click', () => {
+    const opening = toggle.getAttribute('aria-pressed') !== 'true';
+    if (opening) fill();
+    setEditing(opening);
+  });
+
+  document.getElementById('pe-cancel').addEventListener('click', () => setEditing(false));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('profile-error', '');
+
+    const save = document.getElementById('pe-save');
+    save.disabled = true;
+    save.textContent = 'Saving…';
+
+    const payload = {
+      full_name: document.getElementById('pe-name').value.trim() || null,
+      bio: document.getElementById('pe-bio').value.trim() || null,
+      instagram_url: document.getElementById('pe-instagram').value.trim() || null,
+      linkedin_url: document.getElementById('pe-linkedin').value.trim() || null
+    };
+
+    const file = document.getElementById('pe-photo').files[0];
+    if (file) {
+      const path = `avatars/${me.id}-${Date.now()}`;
+      const up = await supabase.storage.from('media').upload(path, file, { upsert: true });
+      if (up.error) {
+        setFormError('profile-error', 'Photo upload failed: ' + up.error.message);
+        save.disabled = false;
+        save.textContent = 'Save';
+        return;
+      }
+      payload.avatar_url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error } = await supabase.from('profiles').update(payload).eq('id', me.id);
+
+    save.disabled = false;
+    save.textContent = 'Save';
+
+    if (error) { setFormError('profile-error', error.message); return; }
+
+    Object.assign(profile, payload);
+    paintProfileCard(profile);
+    setEditing(false);
+    toast('Profile updated');
+  });
+}
+
+/* ---- Signed-out panel ---------------------------------------------------- */
+
+function setFormError(id, message) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.textContent = message || '';
+  box.hidden = !message;
+}
+
+function showAuthPanel() {
+  const panel = document.getElementById('auth-panel');
+  const row = document.querySelector('.profile-row');
+  if (!panel) return;
+
+  panel.hidden = false;
+  if (row) row.hidden = true;
+
+  // If they were bounced here mid-action, say which one.
+  let reason = null;
+  try { reason = sessionStorage.getItem(PENDING_REASON); } catch { /* ignore */ }
+  if (reason) {
+    const note = document.getElementById('auth-reason');
+    note.textContent = reason;
+    note.hidden = false;
+  }
+
+  const signin = document.getElementById('signin-form');
+  const signup = document.getElementById('signup-form');
+  const toggle = document.getElementById('auth-toggle');
+  const title = document.getElementById('auth-title');
+  const sub = document.getElementById('auth-sub');
+
+  toggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    const showingSignup = !signup.hidden;
+    signup.hidden = showingSignup;
+    signin.hidden = !showingSignup;
+    title.textContent = showingSignup ? 'Sign in' : 'Create your account';
+    sub.textContent = showingSignup
+      ? 'Sign in to save events, RSVP, and keep your interests.'
+      : 'Free, and takes about ten seconds.';
+    toggle.textContent = showingSignup
+      ? 'New here? Create an account'
+      : 'Already have an account? Sign in';
+  });
+
+  signin.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('signin-error', '');
+    const btn = document.getElementById('signin-submit');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById('in-email').value.trim(),
+      password: document.getElementById('in-password').value
+    });
+
+    if (error) {
+      setFormError('signin-error', error.message);
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+    location.reload();   // comes back as the signed-in branch
+  });
+
+  signup.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('signup-error', '');
+    const btn = document.getElementById('signup-submit');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    const { data, error } = await supabase.auth.signUp({
+      email: document.getElementById('up-email').value.trim(),
+      password: document.getElementById('up-password').value,
+      options: { data: { full_name: document.getElementById('up-name').value.trim() } }
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+
+    if (error) { setFormError('signup-error', error.message); return; }
+
+    // With email confirmation on, signUp returns no session — say so rather
+    // than reloading into a page that will just ask them to sign in again.
+    if (data.session) location.reload();
+    else setFormError('signup-error', 'Check your inbox to confirm your email, then sign in.');
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', async () => {
+    const email = document.getElementById('in-email').value.trim();
+    if (!email) { setFormError('signin-error', 'Enter your email first.'); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: location.href
+    });
+    if (error) { setFormError('signin-error', error.message); return; }
+    toast('Reset link sent to ' + email);
+  });
+}
+
+/** Applies a heart the user clicked before signing in, then clears the note. */
+async function applyPendingSave() {
+  let pending = null;
+  try {
+    pending = sessionStorage.getItem(PENDING_SAVE);
+    sessionStorage.removeItem(PENDING_SAVE);
+    sessionStorage.removeItem(PENDING_REASON);
+  } catch { return; }
+
+  if (!pending) return;
+
+  const { error } = await supabase.from('event_saves')
+    .upsert({ user_id: me.id, event_id: pending }, { onConflict: 'user_id,event_id' });
+
+  if (!error) {
+    savedIds.add(pending);
+    toast('Saved — it’s in your list below');
+  }
 }

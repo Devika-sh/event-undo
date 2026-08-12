@@ -86,6 +86,70 @@
     <h1 class="profile-head__title">Profile</h1>
   </header>
 
+  <!-- ===== Sign in / sign up =====
+       Unhidden by public-data.js when there's no session; the profile row below
+       is hidden in its place. Signing in happens here rather than on a separate
+       page so "Profile" is the one door into an account. -->
+  <section class="auth-panel" id="auth-panel" hidden aria-labelledby="auth-title">
+    <div class="auth-panel__box">
+
+      <!-- Filled in when the user was sent here by the like button. -->
+      <p class="auth-panel__reason" id="auth-reason" hidden></p>
+
+      <h2 class="auth-panel__title" id="auth-title">Sign in</h2>
+      <p class="auth-panel__sub" id="auth-sub">
+        Sign in to save events, RSVP, and keep your interests.
+      </p>
+
+      <form class="a-form" id="signin-form" novalidate>
+        <p class="a-form__error" id="signin-error" hidden role="alert"></p>
+
+        <div class="a-field">
+          <label class="a-field__label" for="in-email">Email</label>
+          <input class="a-input" id="in-email" type="email" autocomplete="email" required />
+        </div>
+
+        <div class="a-field">
+          <label class="a-field__label" for="in-password">Password</label>
+          <input class="a-input" id="in-password" type="password"
+                 autocomplete="current-password" required />
+        </div>
+
+        <button class="a-btn a-btn--block" id="signin-submit" type="submit">Sign in</button>
+        <button class="a-btn a-btn--ghost a-btn--block a-btn--sm" id="reset-btn" type="button">
+          Forgot password
+        </button>
+      </form>
+
+      <form class="a-form" id="signup-form" hidden novalidate>
+        <p class="a-form__error" id="signup-error" hidden role="alert"></p>
+
+        <div class="a-field">
+          <label class="a-field__label" for="up-name">Full name</label>
+          <input class="a-input" id="up-name" type="text" autocomplete="name" required />
+        </div>
+
+        <div class="a-field">
+          <label class="a-field__label" for="up-email">Email</label>
+          <input class="a-input" id="up-email" type="email" autocomplete="email" required />
+        </div>
+
+        <div class="a-field">
+          <label class="a-field__label" for="up-password">Password</label>
+          <input class="a-input" id="up-password" type="password"
+                 autocomplete="new-password" minlength="8" required />
+          <span class="a-field__hint">At least 8 characters.</span>
+        </div>
+
+        <button class="a-btn a-btn--block" id="signup-submit" type="submit">Create account</button>
+      </form>
+
+      <p class="auth-panel__switch">
+        <a href="#" id="auth-toggle">New here? Create an account</a>
+      </p>
+    </div>
+  </section>
+
   <!-- ===== Profile Card beside the Upcoming Events panel ===== -->
   <div class="profile-row">
 
@@ -128,6 +192,43 @@
         <button class="chip" type="button">Startups</button>
         <button class="chip" type="button">Tech Talks</button>
       </div>
+
+      <!-- Edit mode. The Edit Button above swaps this in for the name, socials
+           and interests; the photo stays put as a preview. -->
+      <form class="profile-edit" id="profile-edit" hidden>
+        <p class="a-form__error" id="profile-error" hidden role="alert"></p>
+
+        <div class="a-field">
+          <label class="a-field__label" for="pe-name">Full name</label>
+          <input class="a-input" id="pe-name" type="text" />
+        </div>
+
+        <div class="a-field">
+          <label class="a-field__label" for="pe-photo">Profile photo</label>
+          <input class="a-input" id="pe-photo" type="file" accept="image/*" />
+          <span class="a-field__hint">Square images look best.</span>
+        </div>
+
+        <div class="a-field">
+          <label class="a-field__label" for="pe-bio">Bio</label>
+          <textarea class="a-textarea" id="pe-bio" style="min-height:80px"></textarea>
+        </div>
+
+        <div class="a-field">
+          <label class="a-field__label" for="pe-instagram">Instagram</label>
+          <input class="a-input" id="pe-instagram" type="url" placeholder="https://instagram.com/…" />
+        </div>
+
+        <div class="a-field">
+          <label class="a-field__label" for="pe-linkedin">LinkedIn</label>
+          <input class="a-input" id="pe-linkedin" type="url" placeholder="https://linkedin.com/in/…" />
+        </div>
+
+        <div class="profile-edit__actions">
+          <button class="a-btn a-btn--ghost" type="button" id="pe-cancel">Cancel</button>
+          <button class="a-btn" type="submit" id="pe-save">Save</button>
+        </div>
+      </form>
     </section>
 
     <!-- Upcoming Events — four Event Listing Cards fanned as a carousel. -->

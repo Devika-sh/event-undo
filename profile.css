@@ -336,3 +336,106 @@
   .chev--prev { left: -3px; }
   .chev--next { right: -3px; }
 }
+
+/* ==========================================================================
+   Sign-in panel
+   Shown in place of the profile row when nobody is signed in. Deliberately
+   wears the Profile Card's own shell — white surface, radius/md, the same
+   asymmetric brand edge — so signing in reads as part of the profile section
+   rather than a separate page the user got bounced to.
+   ========================================================================== */
+
+.auth-panel {
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--space-4xl) var(--space-5xl);
+}
+
+.auth-panel[hidden] { display: none; }
+
+.auth-panel__box {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-4xl);
+  background: var(--bg-white);
+  border-style: solid;
+  border-color: var(--border-brand);
+  border-width: var(--width-none) var(--width-2xl) var(--width-2xl) var(--width-none);
+  border-radius: var(--radius-md);
+}
+
+.auth-panel__title {
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-heading-h4);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-heading-h4);
+  color: var(--text-primary);
+}
+
+.auth-panel__sub {
+  margin: 0 0 var(--space-3xl);
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-xs);
+  line-height: var(--line-height-body-md);
+}
+
+/* Set by public-data.js when the user was sent here by the like button, so the
+   panel can say why they're looking at it. */
+.auth-panel__reason {
+  margin: 0 0 var(--space-3xl);
+  padding: var(--space-lg) var(--space-xl);
+  border-radius: var(--radius-md);
+  background: var(--bg-hover);
+  color: var(--text-brand);
+  font-size: var(--font-size-body-2xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.auth-panel__reason[hidden] { display: none; }
+
+.auth-panel__switch {
+  margin: var(--space-3xl) 0 0;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-2xs);
+}
+
+.auth-panel__switch a { color: var(--text-brand); text-decoration: none; }
+.auth-panel__switch a:hover { text-decoration: underline; }
+
+/* ==========================================================================
+   Edit-your-details form
+   Lives inside the Profile Card and swaps in when the Edit Button is active.
+   The photo stays visible above it as a live preview.
+   ========================================================================== */
+
+.profile-edit {
+  align-self: stretch;
+  display: grid;
+  gap: var(--space-xl);
+  margin-top: var(--space-2xl);
+  text-align: left;
+}
+
+.profile-edit[hidden] { display: none; }
+
+.profile-edit__actions {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.profile-edit__actions .a-btn { flex: 1; }
+
+/* The card clips its content, so a tall edit form has to scroll inside it
+   rather than push the brand edge off the bottom. */
+.profile-card:has(.profile-edit:not([hidden])) {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 720px) {
+  .auth-panel { padding: 0 var(--space-2xl) var(--space-4xl); }
+  .auth-panel__box { padding: var(--space-3xl); }
+  .auth-panel__title { font-size: var(--font-size-heading-h5); line-height: var(--line-height-heading-h5); }
+}

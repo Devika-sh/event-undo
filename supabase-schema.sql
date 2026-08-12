@@ -201,28 +201,29 @@ returns uuid language sql stable security definer set search_path = public as $$
   select organization_id from public.profiles where id = auth.uid();
 $$;
 
--- Every new auth user gets a profile row. The very first account to sign up
--- becomes the admin so there is a way in to a fresh database; everyone after
--- that is a plain user until an admin promotes them.
+-- Every new auth user gets a profile row, always as a plain 'user'.
 --
--- The role is decided here and never read from raw_user_meta_data — that field
--- is attacker-controlled (anyone can pass options.data to signUp), so trusting
--- it would let a stranger sign up as an admin.
+-- Two things this deliberately does NOT do:
+--   • It never reads a role out of raw_user_meta_data. That field is
+--     attacker-controlled — anyone can pass options.data to signUp — so
+--     trusting it would let a stranger sign themselves up as an admin.
+--   • It no longer auto-promotes the first account. Sign-up is now a public
+--     surface on the Profile page, so "first one in wins" would hand the
+--     console to whoever happened to register first.
+--
+-- Bootstrap the first admin by hand instead, once, after signing up normally:
+--
+--   update public.profiles set role = 'admin' where email = 'you@example.com';
+--
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare
-  seed_role text := 'user';
 begin
-  if not exists (select 1 from public.profiles where role = 'admin') then
-    seed_role := 'admin';
-  end if;
-
   insert into public.profiles (id, email, full_name, role)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    seed_role
+    'user'
   )
   on conflict (id) do nothing;
 

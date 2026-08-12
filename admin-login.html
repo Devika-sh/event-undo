@@ -81,43 +81,12 @@
         </div>
       </form>
 
-      <!-- ---- First-run owner account ----
-           The schema's handle_new_user trigger promotes the first account in
-           an empty database to admin; after that this form just creates a
-           plain user, so it stays tucked behind a link. -->
-      <form id="signup-form" hidden novalidate>
-        <h2 class="a-login__title">Create the first account</h2>
-        <p class="a-login__sub">
-          On an empty database the first account becomes the admin. After that,
-          new volunteers are invited from inside the dashboard.
-        </p>
-
-        <div class="a-form">
-          <p class="a-form__error" id="signup-error" hidden role="alert"></p>
-
-          <div class="a-field">
-            <label class="a-field__label" for="signup-name">Full name</label>
-            <input class="a-input" id="signup-name" type="text" autocomplete="name" required />
-          </div>
-
-          <div class="a-field">
-            <label class="a-field__label" for="signup-email">Email</label>
-            <input class="a-input" id="signup-email" type="email" autocomplete="email" required />
-          </div>
-
-          <div class="a-field">
-            <label class="a-field__label" for="signup-password">Password</label>
-            <input class="a-input" id="signup-password" type="password"
-                   autocomplete="new-password" minlength="8" required />
-            <span class="a-field__hint">At least 8 characters.</span>
-          </div>
-
-          <button class="a-btn a-btn--block" id="signup-submit" type="submit">Create account</button>
-        </div>
-      </form>
-
+      <!-- No sign-up here by design. This door is for admins and volunteers
+           only; everyone else creates their account on the Profile page.
+           Volunteers are added from inside the dashboard, and the very first
+           admin is promoted with one SQL statement (see ADMIN-SETUP.md). -->
       <p class="a-login__meta">
-        <a href="#" id="toggle-mode">First time here? Create the owner account</a>
+        Not staff? <a href="profile.html">Sign in on your profile</a>
         <span aria-hidden="true"> · </span>
         <a href="index.html">Back to eventundo</a>
       </p>
@@ -133,8 +102,6 @@
 
   const $ = (id) => document.getElementById(id);
   const signinForm = $('signin-form');
-  const signupForm = $('signup-form');
-  const toggle = $('toggle-mode');
 
   function toast(message, kind = '') {
     const el = document.createElement('div');
@@ -153,23 +120,12 @@
   if (!isConfigured) {
     $('setup-gate').hidden = false;
     signinForm.hidden = true;
-    toggle.hidden = true;
   } else {
     // Already signed in? Skip straight through.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) location.replace('admin.html');
     });
   }
-
-  toggle.addEventListener('click', (e) => {
-    e.preventDefault();
-    const showingSignup = !signupForm.hidden;
-    signupForm.hidden = showingSignup;
-    signinForm.hidden = !showingSignup;
-    toggle.textContent = showingSignup
-      ? 'First time here? Create the owner account'
-      : 'Already have an account? Sign in';
-  });
 
   signinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -190,41 +146,30 @@
       return;
     }
 
-    // Suspended accounts can authenticate but must not reach the console.
+    // Authenticating is not the same as being allowed in. A plain user has a
+    // perfectly valid session — it just isn't a session for this console, so
+    // drop it rather than bouncing them around inside the dashboard.
     const { data: profile } = await supabase
       .from('profiles').select('role, status').eq('id', data.user.id).maybeSingle();
 
-    if (profile && profile.status === 'suspended') {
+    const reject = async (message) => {
       await supabase.auth.signOut();
-      showError('signin-error', 'This account has been suspended. Contact an admin.');
+      showError('signin-error', message);
       btn.disabled = false;
       btn.textContent = 'Sign in';
+    };
+
+    if (!profile) { await reject('No profile found for this account.'); return; }
+    if (profile.status === 'suspended') {
+      await reject('This account has been suspended. Contact an admin.');
+      return;
+    }
+    if (profile.role !== 'admin' && profile.role !== 'volunteer') {
+      await reject('This account does not have console access. Use the Profile page to sign in.');
       return;
     }
 
     location.replace('admin.html');
-  });
-
-  signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showError('signup-error', '');
-    const btn = $('signup-submit');
-    btn.disabled = true;
-    btn.textContent = 'Creating…';
-
-    const { error } = await supabase.auth.signUp({
-      email: $('signup-email').value.trim(),
-      password: $('signup-password').value,
-      options: { data: { full_name: $('signup-name').value.trim() } }
-    });
-
-    btn.disabled = false;
-    btn.textContent = 'Create account';
-
-    if (error) { showError('signup-error', error.message); return; }
-
-    toast('Account created. If email confirmation is on, check your inbox.', 'success');
-    toggle.click();
   });
 
   $('reset-btn').addEventListener('click', async () => {
