@@ -93,6 +93,11 @@ create table if not exists public.events (
   organizer_label text,                     -- overrides the org name on the card
   summary         text,
   description     text,
+  -- Two distinct crops: thumbnail_url is the 6:5 card image (Discover grid,
+  -- featured card, admin list); banner_url is the wide cover on the event's
+  -- own detail page. Kept as separate columns rather than one image with two
+  -- crop rects — the source photos are often different shots entirely.
+  thumbnail_url   text,
   banner_url      text,
   starts_at       timestamptz not null,
   ends_at         timestamptz,
@@ -126,6 +131,12 @@ create table if not exists public.events (
 alter table public.events add column if not exists reviewed_by uuid references public.profiles(id) on delete set null;
 alter table public.events add column if not exists reviewed_at timestamptz;
 alter table public.events add column if not exists review_note text;
+
+-- thumbnail_url split out from banner_url so the card image and the detail
+-- page's cover banner can be different crops (or different photos). Existing
+-- rows keep working unsplit: every read falls back to banner_url when
+-- thumbnail_url is blank (see public-data.js / admin.js).
+alter table public.events add column if not exists thumbnail_url text;
 
 alter table public.events drop constraint if exists events_created_by_fkey;
 alter table public.events add constraint events_created_by_fkey
@@ -549,7 +560,7 @@ create policy activity_insert on public.activity_log
 
 create or replace view public.events_public as
   select
-    e.id, e.title, e.slug, e.summary, e.description, e.banner_url,
+    e.id, e.title, e.slug, e.summary, e.description, e.thumbnail_url, e.banner_url,
     e.starts_at, e.ends_at, e.venue, e.mode, e.fee_amount, e.currency,
     e.capacity, e.register_url, e.status, e.is_featured,
     e.organization_id,

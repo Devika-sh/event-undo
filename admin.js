@@ -108,7 +108,17 @@ function openModal({ title, body, actions = [], wide, narrow, onMount }) {
   document.body.style.overflow = 'hidden';
   if (onMount) onMount($('#modal-body'));
 
-  const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
+  // Taken after onMount, so the baseline is the form as the user first sees
+  // it — anything that differs from here on is their own unsaved work.
+  modalSnapshot = snapshotModal();
+
+  const onKey = (e) => {
+    if (e.key !== 'Escape') return;
+    // Escape backs out of the discard prompt rather than punching through it
+    // and throwing away the very edits it's asking about.
+    if ($('#modal-guard')) { dismissGuard(); return; }
+    requestCloseModal();
+  };
   document.addEventListener('keydown', onKey);
   modalCleanup = () => document.removeEventListener('keydown', onKey);
 
@@ -117,13 +127,100 @@ function openModal({ title, body, actions = [], wide, narrow, onMount }) {
 }
 
 function closeModal() {
+  dismissGuard();
   $('#modal').hidden = true;
   document.body.style.overflow = '';
+  modalSnapshot = null;
   if (modalCleanup) { modalCleanup(); modalCleanup = null; }
 }
 
-$('#modal-close').addEventListener('click', closeModal);
-$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+/* ---- unsaved-changes guard -----------------------------------------------
+   A click on the backdrop used to close the editor outright, so one slip
+   next to the form threw away everything typed into it. Every user-initiated
+   dismissal now goes through requestCloseModal() instead; closeModal() stays
+   unguarded for the programmatic close after a successful save.
+   -------------------------------------------------------------------------- */
+
+let modalSnapshot = null;
+
+/** Serialises everything editable in the modal body, including the chip
+ *  multi-selects (tags, interests) that aren't form controls at all. Makes
+ *  "has this been touched?" one string comparison rather than per-form
+ *  bookkeeping that every new modal would have to remember to opt into. */
+function snapshotModal() {
+  const body = $('#modal-body');
+  if (!body) return null;
+
+  const fields = $$('input, select, textarea', body).map((el) => {
+    const key = el.id || el.name || '';
+    if (el.type === 'checkbox' || el.type === 'radio') return key + '=' + el.checked;
+    // File inputs expose no value to read back; the chosen filename is enough
+    // to notice that a banner or logo was picked and not yet saved.
+    if (el.type === 'file') return key + '=' + (el.files[0] ? el.files[0].name : '');
+    return key + '=' + el.value;
+  });
+
+  const chips = $$('.chip--selected', body).map((c) => c.dataset.cat || c.textContent.trim());
+
+  return JSON.stringify({ fields, chips });
+}
+
+function isModalDirty() {
+  return modalSnapshot !== null && snapshotModal() !== modalSnapshot;
+}
+
+/** Guarded close. An untouched form (or a read-only modal like the attendee
+ *  list) closes straight away, so the prompt only ever appears when there's
+ *  actually something to lose. */
+function requestCloseModal() {
+  if (isModalDirty()) showDiscardGuard();
+  else closeModal();
+}
+
+/** Asks inside the modal rather than through the shared confirm dialog: that
+ *  one reuses #modal-body, which would destroy the very form being rescued. */
+function showDiscardGuard() {
+  if ($('#modal-guard')) return;
+
+  const guard = document.createElement('div');
+  guard.className = 'a-modal__guard';
+  guard.id = 'modal-guard';
+  guard.innerHTML = `
+    <div class="a-modal__guard-box" role="alertdialog" aria-modal="true"
+         aria-labelledby="modal-guard-title" aria-describedby="modal-guard-text">
+      <h3 class="a-modal__guard-title" id="modal-guard-title">Discard your changes?</h3>
+      <p class="a-modal__guard-text" id="modal-guard-text">
+        This form has edits that haven't been saved yet. Closing now loses them.
+      </p>
+      <div class="a-modal__guard-actions">
+        <button class="a-btn a-btn--ghost" type="button" data-guard="keep">Keep editing</button>
+        <button class="a-btn a-btn--danger" type="button" data-guard="discard">Discard changes</button>
+      </div>
+    </div>`;
+
+  guard.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-guard]')?.dataset.guard;
+    if (action === 'keep') dismissGuard();
+    else if (action === 'discard') closeModal();
+  });
+
+  $('#modal').append(guard);
+  // Focus the safe option, so a stray Enter keeps the work rather than binning it.
+  guard.querySelector('[data-guard="keep"]').focus();
+}
+
+function dismissGuard() {
+  $('#modal-guard')?.remove();
+}
+
+$('#modal-close').addEventListener('click', requestCloseModal);
+$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') requestCloseModal(); });
+
+/* Last line of defence: a reload or a tab close with edits pending still gets
+   the browser's own "leave site?" prompt. */
+window.addEventListener('beforeunload', (e) => {
+  if (!$('#modal').hidden && isModalDirty()) e.preventDefault();
+});
 
 /** Small yes/no gate in front of anything destructive. */
 function confirmAction({ title, message, confirmLabel = 'Delete', onConfirm }) {
@@ -474,8 +571,8 @@ function renderEvents() {
     <tr>
       <td>
         <div class="a-cell-media">
-          ${e.banner_url
-            ? `<img class="a-thumb" src="${esc(e.banner_url)}" alt="" loading="lazy" />`
+          ${e.thumbnail_url || e.banner_url
+            ? `<img class="a-thumb" src="${esc(e.thumbnail_url || e.banner_url)}" alt="" loading="lazy" />`
             : '<span class="a-thumb"></span>'}
           <span>
             <span class="a-cell-title">${esc(e.title)}</span>
@@ -672,16 +769,31 @@ function eventForm(ev = {}) {
 
     <div class="a-form__row">
       <div class="a-field">
-        <label class="a-field__label" for="ev-banner">Banner image URL</label>
-        <input class="a-input" id="ev-banner" value="${esc(ev.banner_url || '')}"
+        <label class="a-field__label" for="ev-thumb">Card thumbnail URL</label>
+        <input class="a-input" id="ev-thumb" value="${esc(ev.thumbnail_url || '')}"
                placeholder="Leave blank to use the eventundo fallback image" />
-        <span class="a-field__hint">Or upload below to the <code>media</code> bucket.</span>
+        <span class="a-field__hint">Or upload below. Shown on the Discover grid, the featured card and here in the console.</span>
       </div>
       <div class="a-field">
-        <label class="a-field__label" for="ev-banner-file">Upload banner</label>
-        <div class="a-dropzone" data-dropzone data-input-id="ev-banner-file" data-accept="image/*"
+        <label class="a-field__label" for="ev-thumb-file">Upload card thumbnail</label>
+        <div class="a-dropzone" data-dropzone data-input-id="ev-thumb-file" data-accept="image/*"
              data-hint="JPEG or PNG, up to 5MB"></div>
         <span class="a-field__hint">Best size 1200 × 1000px (6:5 landscape).</span>
+      </div>
+    </div>
+
+    <div class="a-form__row">
+      <div class="a-field">
+        <label class="a-field__label" for="ev-banner">Details page banner URL</label>
+        <input class="a-input" id="ev-banner" value="${esc(ev.banner_url || '')}"
+               placeholder="Leave blank to use the card thumbnail, or the eventundo fallback" />
+        <span class="a-field__hint">Or upload below. Shown at the top of the event's own page — a different, wider crop than the card.</span>
+      </div>
+      <div class="a-field">
+        <label class="a-field__label" for="ev-banner-file">Upload details banner</label>
+        <div class="a-dropzone" data-dropzone data-input-id="ev-banner-file" data-accept="image/*"
+             data-hint="JPEG or PNG, up to 5MB"></div>
+        <span class="a-field__hint">Best size 1280 × 300px (wide banner).</span>
       </div>
     </div>
 
@@ -773,6 +885,13 @@ async function saveEvent(id, btn) {
   btn.disabled = true;
   btn.textContent = 'Saving…';
 
+  let thumbnailUrl = $('#ev-thumb').value.trim();
+  const thumbFile = $('#ev-thumb-file').files[0];
+  if (thumbFile) {
+    const uploaded = await uploadMedia(thumbFile, 'events');
+    if (uploaded) thumbnailUrl = uploaded;
+  }
+
   let bannerUrl = $('#ev-banner').value.trim();
   const file = $('#ev-banner-file').files[0];
   if (file) {
@@ -787,6 +906,7 @@ async function saveEvent(id, btn) {
     organizer_label: $('#ev-organizer').value.trim() || null,
     summary: $('#ev-summary').value.trim() || null,
     description: $('#ev-description').value.trim() || null,
+    thumbnail_url: thumbnailUrl || null,
     banner_url: bannerUrl || null,
     starts_at: startsDate.toISOString(),
     ends_at: endsDate ? endsDate.toISOString() : null,

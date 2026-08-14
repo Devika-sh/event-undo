@@ -161,7 +161,7 @@ function cardMarkup(event) {
     <a class="card__link" href="event-details.html?id=${encodeURIComponent(event.id)}"
        aria-label="View ${title}"></a>
     <div class="card__media">
-      <img class="card__photo" src="${esc(event.banner_url || FALLBACK_IMAGE)}" alt=""
+      <img class="card__photo" src="${esc(event.thumbnail_url || event.banner_url || FALLBACK_IMAGE)}" alt=""
            width="360" height="300" loading="lazy" />
       <div class="card__scrim paint-blur">
         <p class="card__event-title">${title}</p>
@@ -285,7 +285,7 @@ function hydrateFeatured() {
   const photo = document.querySelector('.featured__photo');
   if (title) title.textContent = featured.title;
   if (photo) {
-    photo.src = featured.banner_url || FALLBACK_IMAGE;
+    photo.src = featured.thumbnail_url || featured.banner_url || FALLBACK_IMAGE;
     photo.alt = featured.title;
   }
 
@@ -537,7 +537,7 @@ async function hydrateEventDetails() {
 
   const banner = document.querySelector('.banner__photo');
   if (banner) {
-    banner.src = event.banner_url || FALLBACK_IMAGE;
+    banner.src = event.banner_url || event.thumbnail_url || FALLBACK_IMAGE;
     banner.alt = event.title;
     banner.closest('.banner')?.removeAttribute('data-loading');
   }
