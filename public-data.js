@@ -913,6 +913,30 @@ function wireProfileEdit(profile, topics, mine, orgs) {
     refreshPicker();
   });
 
+  /* ---- Unsaved-changes guard ----
+     Clicking the backdrop used to discard the whole form outright. Every
+     dismissal now checks whether anything was actually edited first; an
+     untouched form still closes without asking. Same protection the admin
+     console's shared modal has (admin.js#requestCloseModal). */
+  let snapshot = null;
+
+  function snapshotEditor() {
+    const fields = [...modal.querySelectorAll('input, select, textarea')].map((el) => {
+      const key = el.id || el.name || '';
+      if (el.type === 'file') return key + '=' + (el.files[0] ? el.files[0].name : '');
+      return key + '=' + el.value;
+    });
+    const picked = [...picker.querySelectorAll('.chip--selected')].map((c) => c.dataset.cat);
+    return JSON.stringify({ fields, picked });
+  }
+
+  function requestCloseEditor() {
+    if (snapshot !== null && snapshotEditor() !== snapshot) {
+      if (!window.confirm('Discard your changes?\n\nThis form has edits that haven’t been saved yet.')) return;
+    }
+    closeEditor();
+  }
+
   const openEditor = () => {
     document.getElementById('pe-name').value = profile?.full_name || '';
     document.getElementById('pe-email').value = profile?.email || me.email || '';
@@ -930,6 +954,8 @@ function wireProfileEdit(profile, topics, mine, orgs) {
     toggle.setAttribute('aria-pressed', 'true');
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
+    // Baseline for the unsaved-changes guard: the form exactly as opened.
+    snapshot = snapshotEditor();
     document.getElementById('pe-name').focus();
   };
 
@@ -937,14 +963,15 @@ function wireProfileEdit(profile, topics, mine, orgs) {
     toggle.setAttribute('aria-pressed', 'false');
     modal.hidden = true;
     document.body.style.overflow = '';
+    snapshot = null;
   };
 
   toggle.addEventListener('click', openEditor);
-  document.getElementById('pe-close').addEventListener('click', closeEditor);
-  document.getElementById('pe-cancel').addEventListener('click', closeEditor);
-  modal.addEventListener('click', (e) => { if (e.target === modal) closeEditor(); });
+  document.getElementById('pe-close').addEventListener('click', requestCloseEditor);
+  document.getElementById('pe-cancel').addEventListener('click', requestCloseEditor);
+  modal.addEventListener('click', (e) => { if (e.target === modal) requestCloseEditor(); });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modal.hidden) closeEditor();
+    if (e.key === 'Escape' && !modal.hidden) requestCloseEditor();
   });
 
   form.addEventListener('submit', async (e) => {

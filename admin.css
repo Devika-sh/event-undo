@@ -813,6 +813,51 @@
   background: var(--colour-gray-500);
 }
 
+/* --- Unsaved-changes guard ---
+   Sits over the modal it's protecting rather than replacing its contents:
+   the form underneath has to survive intact, since "Keep editing" puts the
+   user straight back into it. Above .a-modal's own z-index for that reason. */
+.a-modal__guard {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3xl);
+  background: var(--colour-alpha-60);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.a-modal__guard-box {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-3xl);
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px var(--colour-alpha-20);
+}
+
+.a-modal__guard-title {
+  margin: 0 0 var(--space-md);
+  font-size: var(--font-size-body-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.a-modal__guard-text {
+  margin: 0 0 var(--space-2xl);
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-2xs);
+}
+
+.a-modal__guard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
 /* ==========================================================================
    8. Toasts
    ========================================================================== */

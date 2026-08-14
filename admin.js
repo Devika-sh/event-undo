@@ -229,7 +229,7 @@ function confirmAction({ title, message, confirmLabel = 'Delete', onConfirm }) {
     narrow: true,
     body: `<p style="margin:0;font-size:var(--font-size-body-xs);color:var(--text-secondary)">${esc(message)}</p>`,
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       {
         label: confirmLabel,
         variant: 'danger',
@@ -857,7 +857,7 @@ async function openEventEditor(id) {
       });
     },
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       { label: id ? 'Save changes' : 'Create event', onClick: (btn) => saveEvent(id, btn) }
     ]
   });
@@ -1032,7 +1032,7 @@ function openApproveModal(id) {
     body: `<p style="margin:0;font-size:var(--font-size-body-xs);color:var(--text-secondary)">
       “${esc(ev?.title || 'This event')}” goes live on the public site immediately.</p>`,
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       {
         label: 'Approve & publish',
         onClick: async (btn) => {
@@ -1064,7 +1064,7 @@ function openRejectModal(id) {
       </div>
     </form>`,
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       {
         label: 'Send back',
         variant: 'ghost',
@@ -1097,7 +1097,7 @@ async function showAttendees(id) {
       <thead><tr><th>Name</th><th>Email</th><th>Response</th><th>When</th></tr></thead>
       <tbody>${skeletonRows(4, 3)}</tbody>
     </table></div>`,
-    actions: [{ label: 'Close', variant: 'ghost', onClick: closeModal }]
+    actions: [{ label: 'Close', variant: 'ghost', onClick: requestCloseModal }]
   });
 
   const { data, error } = await supabase
@@ -1280,7 +1280,7 @@ function openOrgEditor(id) {
       </div>
     </form>`,
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       { label: id ? 'Save changes' : 'Create', onClick: (btn) => saveOrg(id, btn) }
     ],
     onMount: (body) => {
@@ -1431,7 +1431,7 @@ function openCategoryEditor(id) {
       </div>
     </form>`,
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       { label: id ? 'Save' : 'Create', onClick: (btn) => saveCategory(id, btn) }
     ]
   });
@@ -1635,7 +1635,7 @@ function openPersonEditor(id) {
       </div>
     </form>`,
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       { label: 'Save', onClick: (btn) => savePerson(id, btn) }
     ]
   });
@@ -1708,7 +1708,7 @@ function openInvite() {
       </div>
     </form>`,
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       { label: 'Add', onClick: sendInvite }
     ]
   });
@@ -1967,7 +1967,7 @@ async function openTeamEditor(id) {
       });
     },
     actions: [
-      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      { label: 'Cancel', variant: 'ghost', onClick: requestCloseModal },
       { label: id ? 'Save' : 'Add', onClick: (btn) => saveTeamMember(id, btn) }
     ]
   });
