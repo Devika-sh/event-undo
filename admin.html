@@ -393,8 +393,9 @@
                 <div class="a-field">
                   <label class="a-field__label" for="acc-photo">Profile photo</label>
                   <div class="a-dropzone" data-dropzone data-input-id="acc-photo" data-accept="image/*"
-                       data-hint="JPEG or PNG, up to 5MB"></div>
-                  <span class="a-field__hint">Square images look best — ideally 500 × 500px.</span>
+                       data-hint="JPEG or PNG, up to 5MB"
+                       data-crop-aspect="1" data-crop-w="500" data-crop-h="500"></div>
+                  <span class="a-field__hint">Square images look best — ideally 500 × 500px. Crop after choosing a file.</span>
                 </div>
                 <div class="a-field">
                   <label class="a-field__label" for="acc-bio">Bio</label>
@@ -483,8 +484,10 @@
                 <div class="a-field">
                   <label class="a-field__label" for="site-favicon-file">Favicon</label>
                   <div class="a-dropzone" data-dropzone data-input-id="site-favicon-file" data-accept="image/png,image/x-icon,image/svg+xml"
-                       data-hint="PNG, ICO or SVG, up to 5MB"></div>
-                  <span class="a-field__hint">Best size 512 × 512px (square). Displayed as small as 16 × 16px.</span>
+                       data-hint="PNG, ICO or SVG, up to 5MB"
+                       data-crop-aspect="1" data-crop-w="512" data-crop-h="512"></div>
+                  <span class="a-field__hint">Best size 512 × 512px (square). Displayed as small as 16 × 16px.
+                    Crop after choosing a PNG (ICO can't be cropped in-browser).</span>
                 </div>
                 <div><button class="a-btn" type="submit">Save</button></div>
               </form>
@@ -510,8 +513,10 @@
                 <div class="a-field">
                   <label class="a-field__label" for="site-og-image-file">Preview image</label>
                   <div class="a-dropzone" data-dropzone data-input-id="site-og-image-file" data-accept="image/*"
-                       data-hint="JPEG or PNG, up to 5MB"></div>
-                  <span class="a-field__hint">Best size 1200 × 630px (1.91:1) — the standard link-preview ratio.</span>
+                       data-hint="JPEG or PNG, up to 5MB"
+                       data-crop-aspect="1.90476" data-crop-w="1200" data-crop-h="630"></div>
+                  <span class="a-field__hint">Best size 1200 × 630px (1.91:1) — the standard link-preview ratio.
+                    Crop after choosing a file.</span>
                 </div>
                 <div class="a-field">
                   <div class="a-og-preview" id="site-og-preview" aria-hidden="true">

@@ -799,8 +799,9 @@ function eventForm(ev = {}) {
       <div class="a-field">
         <label class="a-field__label" for="ev-thumb-file">Upload card thumbnail</label>
         <div class="a-dropzone" data-dropzone data-input-id="ev-thumb-file" data-accept="image/*"
-             data-hint="JPEG or PNG, up to 5MB"></div>
-        <span class="a-field__hint">Best size 1200 × 1000px (6:5 landscape).</span>
+             data-hint="JPEG or PNG, up to 5MB"
+             data-crop-aspect="1.2" data-crop-w="1200" data-crop-h="1000"></div>
+        <span class="a-field__hint">Best size 1200 × 1000px (6:5 landscape). Crop after choosing a file.</span>
       </div>
     </div>
 
@@ -814,8 +815,9 @@ function eventForm(ev = {}) {
       <div class="a-field">
         <label class="a-field__label" for="ev-banner-file">Upload details banner</label>
         <div class="a-dropzone" data-dropzone data-input-id="ev-banner-file" data-accept="image/*"
-             data-hint="JPEG or PNG, up to 5MB"></div>
-        <span class="a-field__hint">Best size 1280 × 300px (wide banner).</span>
+             data-hint="JPEG or PNG, up to 5MB"
+             data-crop-aspect="4.26667" data-crop-w="1280" data-crop-h="300"></div>
+        <span class="a-field__hint">Best size 1280 × 300px (wide banner). Crop after choosing a file.</span>
       </div>
     </div>
 
@@ -1278,8 +1280,10 @@ function openOrgEditor(id) {
         <div class="a-field">
           <label class="a-field__label" for="og-logo-file">Upload logo</label>
           <div class="a-dropzone" data-dropzone data-input-id="og-logo-file" data-accept="image/*"
-               data-hint="JPEG or PNG, up to 5MB"></div>
-          <span class="a-field__hint">Best size 500 × 500px (square). Transparent PNG works best.</span>
+               data-hint="JPEG or PNG, up to 5MB"
+               data-crop-aspect="1" data-crop-w="500" data-crop-h="500"></div>
+          <span class="a-field__hint">Best size 500 × 500px (square). Transparent PNG works best.
+            Crop after choosing a file — the checkerboard shows what stays see-through.</span>
         </div>
       </div>
 
@@ -1971,8 +1975,9 @@ async function openTeamEditor(id) {
         <div class="a-field">
           <label class="a-field__label" for="tm-photo-file">Upload photo</label>
           <div class="a-dropzone" data-dropzone data-input-id="tm-photo-file" data-accept="image/*"
-               data-hint="JPEG or PNG, up to 5MB"></div>
-          <span class="a-field__hint">Best size 500 × 500px (square).</span>
+               data-hint="JPEG or PNG, up to 5MB"
+               data-crop-aspect="1" data-crop-w="500" data-crop-h="500"></div>
+          <span class="a-field__hint">Best size 500 × 500px (square). Crop after choosing a file.</span>
         </div>
       </div>
       <div class="a-form__row">
