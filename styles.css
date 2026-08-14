@@ -245,7 +245,11 @@ body.is-scrolled .scroll-shade { opacity: 1; }
   border-radius: var(--radius-3xl);
   padding: var(--space-lg) var(--space-4xl);
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-  transition: box-shadow 320ms ease;
+  /* Never wider than the viewport itself — without this the full-size gap/padding
+     below (measured against the desktop frame) pushes the pill past the edge on
+     narrower desktop/tablet widths, between here and the 720px mobile-nav swap. */
+  max-width: calc(100vw - (2 * var(--space-3xl)));
+  transition: box-shadow 320ms ease, gap 240ms ease, padding 240ms ease, max-width 240ms ease;
 }
 
 /* Small lift once the page scrolls — no shadow token exists in the design
@@ -264,7 +268,8 @@ body.is-scrolled .navbar {
   padding: var(--space-md) var(--space-3xl);
   border-radius: var(--radius-full);
   line-height: var(--line-height-body-sm);
-  transition: color 120ms ease, background-color 120ms ease;
+  white-space: nowrap;
+  transition: color 120ms ease, background-color 120ms ease, padding 240ms ease;
 }
 
 /* No hover variant exists in Figma — derived from tokens, flag for design. */
@@ -966,6 +971,12 @@ body.is-scrolled .navbar {
 /* --- Tablet. The featured card keeps its side-by-side split (both the desktop and
        phone frames put copy left, photo right); only its proportions tighten. --- */
 @media (max-width: 1100px) {
+  /* Pill's full-size gap/padding (measured for the wide desktop frame) is wider
+     than the pill needs to be down here — tighten it so the link row keeps
+     fitting comfortably down to the 720px mobile-nav swap, animating smoothly
+     via the transition already on .navbar / .navbar__link. */
+  .navbar { gap: var(--space-2xl); padding: var(--space-md) var(--space-2xl); }
+  .navbar__link { padding: var(--space-sm) var(--space-lg); }
   .page { padding: 0 var(--space-3xl) var(--space-3xl); }
   .featured { grid-template-columns: 1fr 42%; min-height: 220px; }
   .featured__body { padding: var(--space-4xl) var(--space-3xl); }
