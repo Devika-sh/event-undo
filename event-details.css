@@ -195,9 +195,11 @@
   pointer-events: none;
 }
 
-/* --- Checkbox --- */
+/* --- Radio (Yes / No) ---
+   Standard 20px control — deliberately not the 32px box the old checkbox
+   styling used here for a single-choice, mutually-exclusive question. */
 
-.checkbox {
+.radio {
   display: inline-flex;
   align-items: center;
   gap: var(--space-lg);
@@ -205,7 +207,7 @@
 }
 
 /* Native control stays in the a11y tree but is visually replaced by __box. */
-.checkbox__input {
+.radio__input {
   position: absolute;
   width: 1px; height: 1px;
   opacity: 0;
@@ -213,43 +215,47 @@
 }
 
 /* Unselected */
-.checkbox__box {
+.radio__box {
   flex: none;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-xs);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
   background: var(--bg-inactive);
   border: var(--width-lg) solid var(--border-inactive);
   transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-/* `check` — 20x20 frame (icon-button size), 13.33x9.17 glyph, icon-white. */
-.checkbox__check {
-  width: 20px;
-  height: 20px;
-  background-color: var(--icon-white);
-  -webkit-mask-image: url("Assets/icon-check.svg");
-          mask-image: url("Assets/icon-check.svg");
+/* Inner filled dot — scales in rather than just fading, so the selected
+   state reads as a deliberate mark rather than a colour flip. */
+.radio__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--icon-white);
   opacity: 0;
-  transition: opacity 120ms ease;
+  transform: scale(0.4);
+  transition: opacity 120ms ease, transform 120ms ease;
 }
 
-/* Selected — brand fill, light border-active ring, white check. */
-.checkbox__input:checked + .checkbox__box {
+/* Selected — brand fill, light border-active ring, white dot. */
+.radio__input:checked + .radio__box {
   background: var(--bg-brand);
   border-color: var(--border-active);
 }
-.checkbox__input:checked + .checkbox__box .checkbox__check { opacity: 1; }
+.radio__input:checked + .radio__box .radio__dot {
+  opacity: 1;
+  transform: scale(1);
+}
 
 /* Focus ring is undefined in Figma — derived from border-brand, flag for design. */
-.checkbox__input:focus-visible + .checkbox__box {
+.radio__input:focus-visible + .radio__box {
   outline: var(--width-xl) solid var(--border-brand);
   outline-offset: var(--space-xs);
 }
 
-.checkbox__label {
+.radio__label {
   font-family: var(--font-family-heading);
   font-size: var(--font-size-heading-h6);   /* Display s/Regular */
   font-weight: var(--font-weight-regular);
@@ -478,6 +484,12 @@
 .more-events__track > .card {
   flex: 0 0 min(400px, 100%);
   scroll-snap-align: start;
+  /* Layers a small drop shadow under the component's own inset brand-edge
+     stroke (styles.css .card) rather than replacing it — box-shadow only
+     takes the last declaration that sets it, so both live in this one value. */
+  box-shadow:
+    inset calc(-1 * var(--width-2xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand),
+    0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 /* --- Chevron Button (Navigation) ---
@@ -686,8 +698,11 @@
   /* Card's lifted brand edge scales down from width/2xl (3) on both sides to
      an asymmetric width/xl (2) right / width/2xl (3) bottom — the same
      downshift the Profile Card's and Org Card's mobile variants make. Scoped
-     to this page: the shared .card rule elsewhere is untouched. */
+     to this page: the shared .card rule elsewhere is untouched. Keeps the
+     drop shadow from the base rule above alongside the resized inset edge. */
   .detail-page .card {
-    box-shadow: inset calc(-1 * var(--width-xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand);
+    box-shadow:
+      inset calc(-1 * var(--width-xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand),
+      0 4px 12px rgba(0, 0, 0, 0.12);
   }
 }

@@ -100,24 +100,21 @@
     <form class="question__body" onsubmit="return false;">
       <p class="question__title" id="rsvp-question">Are you Attending this Event?</p>
 
-      <!-- Single-choice question: one answer resolves the prompt. -->
+      <!-- Single-choice question: one answer resolves the prompt. A radio
+           control, not a checkbox — "Yes" and "No" are mutually exclusive,
+           and the standard-size dot keeps it from reading as a checklist
+           item the way the old 32px tick box did. -->
       <div class="question__answers" role="radiogroup" aria-labelledby="rsvp-question">
-        <label class="checkbox">
-          <input class="checkbox__input" type="radio" name="rsvp" value="yes" />
-          <span class="checkbox__box">
-            <!-- Untitled UI `check` — exported from the Checkbox `Selected`
-                 variant in the EU Design System library. -->
-            <span class="checkbox__check icon-mask" aria-hidden="true"></span>
-          </span>
-          <span class="checkbox__label">Yes</span>
+        <label class="radio">
+          <input class="radio__input" type="radio" name="rsvp" value="yes" />
+          <span class="radio__box"><span class="radio__dot" aria-hidden="true"></span></span>
+          <span class="radio__label">Yes</span>
         </label>
 
-        <label class="checkbox">
-          <input class="checkbox__input" type="radio" name="rsvp" value="no" />
-          <span class="checkbox__box">
-            <span class="checkbox__check icon-mask" aria-hidden="true"></span>
-          </span>
-          <span class="checkbox__label">No</span>
+        <label class="radio">
+          <input class="radio__input" type="radio" name="rsvp" value="no" />
+          <span class="radio__box"><span class="radio__dot" aria-hidden="true"></span></span>
+          <span class="radio__label">No</span>
         </label>
       </div>
 
