@@ -51,12 +51,25 @@ inside the dashboard — you never need this SQL again.
 
 | Role | Can do |
 |------|--------|
-| **admin** | Everything: events, organisations, categories, volunteers, users, the public team roster, the featured event, the audit log. |
-| **volunteer** | Add and edit events for **their own** organisation, and edit that organisation's public page. No people management. |
+| **admin** | Everything: events, organisations, categories, volunteers, users, the public team roster, the featured event, the audit log — including approving or sending back events volunteers submit. |
+| **volunteer** | Add and edit events for **their own** organisation, and edit that organisation's public page. Can't publish directly — submitting an event sets it to **pending review**; an admin approves it from **Pending approval** before it's live. No people management. |
 | **user** | The public site: save events, RSVP, pick interests. |
 
 Roles are enforced in Postgres, not in the browser — the console's role checks
-only decide what's worth showing.
+only decide what's worth showing. A volunteer trying to set an event straight
+to `published` (even via a direct API call, bypassing the UI) is silently
+downgraded to `pending` by a database trigger — the dropdown just keeps that
+from ever being their normal path.
+
+## Approving events
+
+Events a volunteer submits land as **pending review**, not live. Admins see
+them under **Pending approval** in the sidebar (and inline, in the main
+Events table) with two actions:
+
+- **Approve & publish** — goes live immediately.
+- **Send back** — returns it to draft, with an optional note the volunteer
+  sees the next time they open it for editing.
 
 ## Adding a volunteer
 

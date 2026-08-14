@@ -36,6 +36,10 @@
         <span class="a-nav__icon a-nav__icon--events" aria-hidden="true"></span> Events
         <span class="a-nav__count" data-count="events">0</span>
       </button>
+      <button class="a-nav__link" type="button" data-view="pending" data-admin-only>
+        <span class="a-nav__icon a-nav__icon--events" aria-hidden="true"></span> Pending approval
+        <span class="a-nav__count" data-count="pending">0</span>
+      </button>
       <button class="a-nav__link" type="button" data-view="organizations">
         <span class="a-nav__icon a-nav__icon--orgs" aria-hidden="true"></span> Organisations
         <span class="a-nav__count" data-count="organizations">0</span>
@@ -139,6 +143,7 @@
             <select class="a-select" id="events-status" style="width:auto" aria-label="Filter by status">
               <option value="">All statuses</option>
               <option value="published">Published</option>
+              <option value="pending">Pending review</option>
               <option value="draft">Draft</option>
               <option value="cancelled">Cancelled</option>
             </select>
@@ -157,6 +162,29 @@
                 </tr>
               </thead>
               <tbody id="events-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Pending approval ---------- -->
+      <section class="a-view" id="view-pending" hidden>
+        <div class="a-panel">
+          <div class="a-toolbar">
+            <label class="a-search">
+              <span class="a-search__icon" aria-hidden="true"></span>
+              <input type="search" id="pending-search" placeholder="Search pending events" aria-label="Search pending events" />
+            </label>
+          </div>
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead>
+                <tr>
+                  <th>Event</th><th>Organisation</th><th>Submitted by</th>
+                  <th>Submitted</th><th>Starts</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="pending-rows"></tbody>
             </table>
           </div>
         </div>

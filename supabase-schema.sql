@@ -104,13 +104,41 @@ create table if not exists public.events (
   capacity        int,
   register_url    text,
   status          text not null default 'draft'
-                    check (status in ('draft','published','cancelled')),
+                    -- 'pending' = a volunteer submitted it for review; only
+                    -- an admin's approval (or the guard trigger below) moves
+                    -- anything into 'published'.
+                    check (status in ('draft','pending','published','cancelled')),
   is_featured     boolean not null default false,
-  created_by      uuid references auth.users(id) on delete set null,
-  updated_by      uuid references auth.users(id) on delete set null,
+  created_by      uuid references public.profiles(id) on delete set null,
+  updated_by      uuid references public.profiles(id) on delete set null,
+  -- Who reviewed a pending submission, and any note sent back with a rejection.
+  reviewed_by     uuid references public.profiles(id) on delete set null,
+  reviewed_at     timestamptz,
+  review_note     text,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
+
+-- Added after the initial release — safe to re-run against a database that
+-- already has events without them. created_by/updated_by used to point at
+-- auth.users; repointed at profiles for the same reason event_saves etc. do
+-- (PostgREST can't embed across a FK into the auth schema).
+alter table public.events add column if not exists reviewed_by uuid references public.profiles(id) on delete set null;
+alter table public.events add column if not exists reviewed_at timestamptz;
+alter table public.events add column if not exists review_note text;
+
+alter table public.events drop constraint if exists events_created_by_fkey;
+alter table public.events add constraint events_created_by_fkey
+  foreign key (created_by) references public.profiles(id) on delete set null;
+alter table public.events drop constraint if exists events_updated_by_fkey;
+alter table public.events add constraint events_updated_by_fkey
+  foreign key (updated_by) references public.profiles(id) on delete set null;
+
+-- 'pending' added for the volunteer-submission approval workflow — widen the
+-- check constraint on databases created before it existed.
+alter table public.events drop constraint if exists events_status_check;
+alter table public.events add constraint events_status_check
+  check (status in ('draft','pending','published','cancelled'));
 
 create table if not exists public.event_categories (
   event_id    uuid not null references public.events(id) on delete cascade,
@@ -306,6 +334,29 @@ $$;
 drop trigger if exists events_single_featured on public.events;
 create trigger events_single_featured after insert or update of is_featured on public.events
   for each row when (new.is_featured) execute function public.enforce_single_featured();
+
+-- Only an admin's approval can put an event live. If a volunteer (or anyone
+-- forging a direct API call) tries to move a non-published event straight to
+-- 'published', this quietly downgrades it to 'pending' instead of erroring —
+-- the dashboard already hides the option, so hitting this means the request
+-- didn't come through the UI. Editing an already-published event's other
+-- fields is untouched: the guard only fires on an actual draft/pending →
+-- published transition, not on a published → published no-op.
+create or replace function public.guard_event_status()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.status = 'published'
+     and not public.is_admin()
+     and (tg_op = 'INSERT' or old.status is distinct from 'published') then
+    new.status := 'pending';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists events_guard_status on public.events;
+create trigger events_guard_status before insert or update on public.events
+  for each row execute function public.guard_event_status();
 
 -- --------------------------------------------------------------------------
 -- 3. Row Level Security

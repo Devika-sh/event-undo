@@ -69,6 +69,26 @@ img { display: block; max-width: 100%; }
 }
 
 /* ==========================================================================
+   Motion easings
+   Named curves so the navbar's several moving parts share one vocabulary
+   instead of each inventing its own bezier. Three deliberate personalities:
+   symmetric in-out for structural moves (the menu wipe), asymmetric in/out
+   for things entering vs leaving (the nav hiding vs revealing), and an
+   overshoot for the small springy bits (the hamburger's X).
+   Motion isn't in the Figma token library, so these live here rather than in
+   tokens.css, which is a strict mirror of it.
+   ========================================================================== */
+
+:root {
+  --ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out-cubic:    cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in-cubic:     cubic-bezier(0.32, 0, 0.67, 0);
+  --ease-snappy:       cubic-bezier(0.2, 0.21, 0, 1);
+  --ease-back:         cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  --ease-power4:       cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ==========================================================================
    Page transitions
    No blocking splash screen — content (from cache or a fresh fetch) shows
    immediately. Instead the whole page slides/fades in on entry, and a
@@ -249,8 +269,30 @@ body.is-scrolled .scroll-shade { opacity: 1; }
      below (measured against the desktop frame) pushes the pill past the edge on
      narrower desktop/tablet widths, between here and the 720px mobile-nav swap. */
   max-width: calc(100vw - (2 * var(--space-3xl)));
-  transition: box-shadow 320ms ease, gap 240ms ease, padding 240ms ease, max-width 240ms ease;
+  transition: box-shadow 320ms ease, gap 240ms ease, padding 240ms ease, max-width 240ms ease,
+              transform 400ms var(--ease-out-cubic);
 }
+
+/* --- Hide on scroll down, reveal on scroll up ----------------------------
+   The transform goes on the visible pills themselves, never on the wrappers
+   around them (.navbar-wrap, .profile-head__bar, .detail-head__bar): several
+   pages nest .mobile-menu inside that wrapper, and a transformed ancestor
+   becomes the containing block for its `position: fixed` descendants — the
+   full-screen menu would stop tracking the viewport. Same trap the page-slide
+   animation on `body` documents above.
+   Asymmetric curves, as on the reference: ease-in to leave (gets out of the
+   way quickly), ease-out to return (arrives softly). */
+body.is-nav-hidden .navbar,
+body.is-nav-hidden .navbar-mobile {
+  transform: translateY(calc(-100% - var(--space-4xl)));
+  transition-timing-function: var(--ease-in-cubic);
+  transition-duration: 500ms;
+}
+
+/* The fly-in logo rides with the pill rather than being left behind, and the
+   blur that backs the nav has nothing left to back once it's gone. */
+body.is-nav-hidden .masthead__logo { opacity: 0; }
+body.is-scrolled.is-nav-hidden .scroll-shade { opacity: 0; }
 
 /* Small lift once the page scrolls — no shadow token exists in the design
    system (the footer spec explicitly says "no shadows"), so this stays a
@@ -1710,6 +1752,17 @@ body.is-scrolled .navbar {
   border-radius: var(--radius-md);
   background: var(--bg-hover);
   color: var(--colour-orange-700);
+  font-size: var(--font-size-body-2xs);
+}
+
+/* Same box as .a-form__error, softened — an FYI (e.g. the admin's note on a
+   sent-back event) rather than something the volunteer needs to fix first. */
+.a-form__note {
+  padding: var(--space-lg) var(--space-xl);
+  border: var(--width-lg) solid var(--border-active);
+  border-radius: var(--radius-md);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
   font-size: var(--font-size-body-2xs);
 }
 

@@ -29,6 +29,7 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const store = {
   me: null,
   events: [],
+  pendingEvents: [],
   orgs: [],
   categories: [],
   people: [],        // every profile row
@@ -48,6 +49,7 @@ const CATEGORY_GROUPS = ['mode', 'timing', 'organiser', 'topic'];
 const VIEWS = {
   overview:      { title: 'Overview',      sub: 'How the platform is doing right now' },
   events:        { title: 'Events',        sub: 'Create, edit and publish events' },
+  pending:       { title: 'Pending approval', sub: 'Events volunteers submitted, waiting for your OK' },
   organizations: { title: 'Organisations', sub: 'Clubs and organisations running events' },
   categories:    { title: 'Categories',    sub: 'Filter chips shown across the site' },
   volunteers:    { title: 'Volunteers',    sub: 'People who can add and edit events' },
@@ -179,8 +181,8 @@ function downloadCsv(filename, rows) {
 }
 
 const statusBadge = (status) => {
-  const cls = status === 'published' ? 'live' : status === 'draft' ? 'soft' : 'muted';
-  return `<span class="a-badge a-badge--${cls}">${esc(status)}</span>`;
+  const cls = status === 'published' ? 'live' : status === 'pending' ? 'soft' : 'muted';
+  return `<span class="a-badge a-badge--${cls}">${esc(status === 'pending' ? 'pending review' : status)}</span>`;
 };
 
 /* ==========================================================================
@@ -296,6 +298,7 @@ function wireChrome() {
   $('#events-search').addEventListener('input', renderEvents);
   $('#events-status').addEventListener('change', renderEvents);
   $('#events-org').addEventListener('change', renderEvents);
+  $('#pending-search').addEventListener('input', renderPendingApprovals);
   $('#orgs-search').addEventListener('input', renderOrgs);
   $('#volunteers-search').addEventListener('input', renderVolunteers);
   $('#users-search').addEventListener('input', renderUsers);
@@ -320,6 +323,7 @@ function wireChrome() {
 const LOADERS = {
   overview: loadOverview,
   events: loadEvents,
+  pending: loadPendingApprovals,
   organizations: loadOrgs,
   categories: loadCategories,
   volunteers: loadPeople,
@@ -397,6 +401,7 @@ async function loadOverview() {
 
   // Counts in the sidebar
   setCount('events', store.events.length);
+  setCount('pending', store.events.filter((e) => e.status === 'pending').length);
   setCount('organizations', store.orgs.length);
   setCount('volunteers', allPeople.filter((p) => p.role === 'volunteer').length);
   setCount('users', allPeople.filter((p) => p.role === 'user').length);
@@ -490,6 +495,13 @@ function renderEvents() {
           <button class="a-icon-btn" type="button" title="Attendees"
                   data-action="event-attendees" data-id="${esc(e.id)}">
             <span class="a-icon-btn__glyph a-icon-btn__glyph--people"></span></button>
+          ${e.status === 'pending' && isAdmin(store.me) ? `
+          <button class="a-icon-btn" type="button" title="Approve &amp; publish"
+                  data-action="approve-event" data-id="${esc(e.id)}">
+            <span class="a-icon-btn__glyph a-icon-btn__glyph--check"></span></button>
+          <button class="a-icon-btn" type="button" title="Send back to draft"
+                  data-action="reject-event" data-id="${esc(e.id)}">
+            <span class="a-icon-btn__glyph a-icon-btn__glyph--x"></span></button>` : ''}
           ${canManageEvent(e) ? `
           <button class="a-icon-btn" type="button" title="Edit"
                   data-action="edit-event" data-id="${esc(e.id)}">
@@ -564,9 +576,22 @@ function eventForm(ev = {}) {
     <button class="chip${selectedTags.has(c.id) ? ' chip--selected' : ''}" type="button"
             data-cat="${esc(c.id)}">${esc(c.name)}</button>`).join('');
 
+  // Volunteers can't self-publish — 'published' isn't offered as a choice.
+  // But if an admin already published this event, it has to stay a valid,
+  // selected option here too, or the browser silently falls back to the
+  // first option ('draft') and an unrelated field edit would unpublish it.
+  const statusChoices = isAdmin(store.me)
+    ? ['draft', 'pending', 'published', 'cancelled']
+    : ['draft', 'pending', 'cancelled'];
+  if (ev.status && !statusChoices.includes(ev.status)) statusChoices.splice(2, 0, ev.status);
+
   return `
   <form class="a-form" id="event-form">
     <p class="a-form__error" id="event-error" hidden role="alert"></p>
+    ${ev.status === 'draft' && ev.review_note ? `
+    <p class="a-form__note">
+      <strong>Admin feedback on the last submission:</strong> ${esc(ev.review_note)}
+    </p>` : ''}
 
     <div class="a-field">
       <label class="a-field__label" for="ev-title">Event title</label>
@@ -675,9 +700,12 @@ function eventForm(ev = {}) {
       <div class="a-field">
         <label class="a-field__label" for="ev-status">Status</label>
         <select class="a-select" id="ev-status">
-          ${['draft', 'published', 'cancelled'].map((s) =>
-            `<option value="${s}"${(ev.status || 'draft') === s ? ' selected' : ''}>${s}</option>`).join('')}
+          ${statusChoices.map((s) =>
+            `<option value="${s}"${(ev.status || 'draft') === s ? ' selected' : ''}>${s === 'pending' ? 'pending review' : s}</option>`).join('')}
         </select>
+        ${isAdmin(store.me)
+          ? ''
+          : '<span class="a-field__hint">Only admins can publish — set “pending review” once it’s ready and an admin will take it from there.</span>'}
       </div>
       <div class="a-field">
         <span class="a-field__label">Featured</span>
@@ -803,7 +831,134 @@ async function saveEvent(id, btn) {
   await logActivity(id ? 'updated' : 'created', 'event', eventId, title);
   closeModal();
   toast(id ? 'Event updated' : 'Event created', 'success');
-  loadEvents();
+  refreshCurrentEventsView();
+}
+
+/** Whichever of Events / Pending approval is on screen gets reloaded, and the
+ *  sidebar's pending count is kept correct either way — a save, approval or
+ *  rejection can change both, and the acting view isn't always the same one
+ *  the row lives in. */
+function refreshCurrentEventsView() {
+  const view = location.hash.replace('#', '') || 'overview';
+  if (view === 'pending') loadPendingApprovals();
+  else if (view === 'events') loadEvents();
+  supabase.from('events').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+    .then(({ count }) => setCount('pending', count || 0));
+}
+
+async function loadPendingApprovals() {
+  $('#pending-rows').innerHTML = skeletonRows(6);
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, title, starts_at, created_at, organizations(name), profiles!created_by(full_name, email)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  if (error) { fail(error, 'loading pending events'); return; }
+  store.pendingEvents = data || [];
+  setCount('pending', store.pendingEvents.length);
+  renderPendingApprovals();
+}
+
+function renderPendingApprovals() {
+  const term = $('#pending-search').value.trim().toLowerCase();
+  const rows = store.pendingEvents.filter((e) =>
+    !term || `${e.title} ${e.organizations?.name || ''}`.toLowerCase().includes(term));
+
+  $('#pending-rows').innerHTML = rows.length ? rows.map((e) => `
+    <tr>
+      <td><span class="a-cell-title">${esc(e.title)}</span></td>
+      <td>${esc(e.organizations?.name || '—')}</td>
+      <td>${esc(e.profiles?.full_name || e.profiles?.email || '—')}</td>
+      <td>${esc(formatShort(e.created_at))}</td>
+      <td>${esc(formatDate(e.starts_at))}</td>
+      <td>
+        <div class="a-table__actions">
+          <button class="a-icon-btn" type="button" title="Edit"
+                  data-action="edit-event" data-id="${esc(e.id)}">
+            <span class="a-icon-btn__glyph a-icon-btn__glyph--edit"></span></button>
+          <button class="a-btn a-btn--ghost a-btn--sm" type="button"
+                  data-action="reject-event" data-id="${esc(e.id)}">Send back</button>
+          <button class="a-btn a-btn--sm" type="button"
+                  data-action="approve-event" data-id="${esc(e.id)}">Approve</button>
+        </div>
+      </td>
+    </tr>`).join('')
+    : emptyRow(6, 'Nothing waiting', 'Events volunteers submit for review show up here.');
+}
+
+/** Shared by the inline Events-table buttons and the Pending approval queue. */
+function findReviewable(id) {
+  return store.pendingEvents.find((e) => e.id === id) || store.events.find((e) => e.id === id);
+}
+
+async function reviewEvent(id, { approve, note }) {
+  const ev = findReviewable(id);
+  const payload = approve
+    ? { status: 'published', reviewed_by: store.me.id, reviewed_at: new Date().toISOString(), review_note: null }
+    : { status: 'draft', reviewed_by: store.me.id, reviewed_at: new Date().toISOString(), review_note: note || null };
+
+  const { error } = await supabase.from('events').update(payload).eq('id', id);
+  if (error) { fail(error, approve ? 'approving the event' : 'sending the event back'); return false; }
+
+  await logActivity(approve ? 'approved' : 'sent back', 'event', id, ev?.title);
+  return true;
+}
+
+function openApproveModal(id) {
+  const ev = findReviewable(id);
+  openModal({
+    title: 'Publish this event?',
+    narrow: true,
+    body: `<p style="margin:0;font-size:var(--font-size-body-xs);color:var(--text-secondary)">
+      “${esc(ev?.title || 'This event')}” goes live on the public site immediately.</p>`,
+    actions: [
+      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      {
+        label: 'Approve & publish',
+        onClick: async (btn) => {
+          btn.disabled = true;
+          const ok = await reviewEvent(id, { approve: true });
+          if (!ok) { btn.disabled = false; return; }
+          closeModal();
+          toast('Event published', 'success');
+          refreshCurrentEventsView();
+        }
+      }
+    ]
+  });
+}
+
+function openRejectModal(id) {
+  const ev = findReviewable(id);
+  openModal({
+    title: 'Send back to the organiser',
+    narrow: true,
+    body: `
+    <form class="a-form" id="reject-form">
+      <p style="margin:0;font-size:var(--font-size-body-xs);color:var(--text-secondary)">
+        “${esc(ev?.title || 'This event')}” goes back to draft. Optionally say why, so they know what to fix.
+      </p>
+      <div class="a-field">
+        <label class="a-field__label" for="rej-note">Note (optional)</label>
+        <textarea class="a-textarea" id="rej-note" placeholder="e.g. Add a banner image and a registration link"></textarea>
+      </div>
+    </form>`,
+    actions: [
+      { label: 'Cancel', variant: 'ghost', onClick: closeModal },
+      {
+        label: 'Send back',
+        variant: 'ghost',
+        onClick: async (btn) => {
+          btn.disabled = true;
+          const ok = await reviewEvent(id, { approve: false, note: $('#rej-note').value.trim() });
+          if (!ok) { btn.disabled = false; return; }
+          closeModal();
+          toast('Sent back to draft', 'success');
+          refreshCurrentEventsView();
+        }
+      }
+    ]
+  });
 }
 
 async function uploadMedia(file, folder) {
@@ -1969,8 +2124,10 @@ const ACTIONS = {
   'new-event':        () => openEventEditor(null),
   'edit-event':       (el) => openEventEditor(el.dataset.id),
   'event-attendees':  (el) => showAttendees(el.dataset.id),
+  'approve-event':    (el) => openApproveModal(el.dataset.id),
+  'reject-event':     (el) => openRejectModal(el.dataset.id),
   'delete-event':     (el) => {
-    const ev = store.events.find((e) => e.id === el.dataset.id);
+    const ev = findReviewable(el.dataset.id);
     confirmAction({
       title: 'Delete event',
       message: `“${ev?.title || 'This event'}” and its RSVPs will be removed. This can't be undone.`,
@@ -1979,7 +2136,7 @@ const ACTIONS = {
         if (error) { fail(error, 'deleting the event'); return; }
         await logActivity('deleted', 'event', el.dataset.id, ev?.title);
         toast('Event deleted', 'success');
-        loadEvents();
+        refreshCurrentEventsView();
       }
     });
   },
