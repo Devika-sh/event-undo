@@ -70,6 +70,14 @@
       <!-- Expanded menu panel. Not part of the Figma component — built once
            for the Discover page and reused here as-is. -->
       <div class="mobile-menu" id="mobile-menu" hidden>
+        <!-- Staggered colour-wipe panels; see .mobile-menu__layer in styles.css. -->
+        <div class="mobile-menu__wipe" aria-hidden="true">
+          <span class="mobile-menu__layer"></span>
+          <span class="mobile-menu__layer"></span>
+          <span class="mobile-menu__layer"></span>
+          <span class="mobile-menu__layer"></span>
+        </div>
+
         <nav class="mobile-menu__links" aria-label="Sections">
           <a class="mobile-menu__link mobile-menu__link--active" href="index.html" aria-current="page">Discover</a>
           <a class="mobile-menu__link" href="organizations.html">Organizations</a>
@@ -226,41 +234,6 @@
 </div>
 
 <script>
-  // Page transition: slide the current page out before following an internal
-  // navbar link, so moving between pages reads as one continuous motion
-  // instead of a hard cut. Shared verbatim across every page's script.
-  (function () {
-    var EXIT_MS = 180;
-    document.addEventListener('click', function (e) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      var link = e.target.closest('.navbar a[href], .navbar-mobile a[href], .mobile-menu a[href]');
-      if (!link) return;
-      var href = link.getAttribute('href');
-      if (!href || href.charAt(0) === '#' || link.target === '_blank') return;
-      e.preventDefault();
-      document.body.classList.add('page-exit');
-      setTimeout(function () { location.href = href; }, EXIT_MS);
-    });
-  })();
-
-  // Scroll state: drives the header's scroll-shade gradient. rAF-throttled
-  // so it never fights the scroll itself. Shared verbatim across every page.
-  (function () {
-    var threshold = 80;
-    var ticking = false;
-    function update() {
-      document.body.classList.toggle('is-scrolled', window.scrollY > threshold);
-      ticking = false;
-    }
-    window.addEventListener('scroll', function () {
-      if (!ticking) {
-        window.requestAnimationFrame(update);
-        ticking = true;
-      }
-    }, { passive: true });
-    update();
-  })();
-
   // Like button: Default ↔ Liked
   document.querySelectorAll('.like-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -318,30 +291,11 @@
     setFlags(0);
   })();
 
-  // Mobile menu: hamburger ↔ x-close, same behaviour as the other pages.
-  (function () {
-    var toggle = document.querySelector('.navbar-btn');
-    var menu = document.getElementById('mobile-menu');
-    var bar = document.querySelector('.detail-head__bar');
-    if (!toggle || !menu || !bar) return;
-
-    function setOpen(open) {
-      toggle.setAttribute('aria-expanded', String(open));
-      toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-      menu.hidden = !open;
-      // Drops the navbar's pill and lifts it above the overlay.
-      bar.toggleAttribute('data-menu-open', open);
-      document.body.style.overflow = open ? 'hidden' : '';
-    }
-
-    toggle.addEventListener('click', function () {
-      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') setOpen(false);
-    });
-  })();
 </script>
+
+<!-- Shared header behaviour: page transitions, scroll state, mobile menu.
+     Replaces the three near-identical inline blocks every page used to repeat. -->
+<script src="nav.js"></script>
 
 <!-- Live data. Loads events, organisations and the roster from Supabase and
      wires save/RSVP for the signed-in user. Falls back to the static markup

@@ -123,6 +123,23 @@ body.page-exit {
 
 @media (prefers-reduced-motion: reduce) {
   body, body.page-exit { animation: none; }
+
+  /* Navbar motion: every moving part still reaches the same end state, it
+     just gets there without travelling. The menu's wipe layers are the one
+     thing that must not simply stop — they'd be left covering the screen —
+     so they snap to their open position instead of sliding to it. */
+  .navbar,
+  .navbar-mobile,
+  .navbar__link::after,
+  .navbar-btn__icon::before,
+  .navbar-btn__icon::after,
+  .mobile-menu__layer,
+  .mobile-menu__link,
+  .mobile-menu__mark {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+    animation: none;
+  }
 }
 
 /* ==========================================================================
@@ -304,6 +321,7 @@ body.is-scrolled .navbar {
 }
 
 .navbar__link {
+  position: relative;
   font-size: var(--font-size-body-sm);   /* Body xl/Medium */
   font-weight: var(--font-weight-medium);
   color: var(--text-secondary);
@@ -316,6 +334,31 @@ body.is-scrolled .navbar {
 
 /* No hover variant exists in Figma — derived from tokens, flag for design. */
 .navbar__link:hover { color: var(--text-primary); }
+
+/* Direction-aware underline: the rule wipes in from the edge the pointer
+   entered and retracts toward the edge it leaves by, because the origin flips
+   between the two rules rather than the bar simply fading in place. */
+.navbar__link::after {
+  content: '';
+  position: absolute;
+  left: var(--space-3xl);
+  right: var(--space-3xl);
+  bottom: var(--space-sm);
+  height: 1.5px;
+  border-radius: var(--radius-full);
+  background: var(--text-primary);
+  transform: scaleX(0);
+  transform-origin: 100% center;
+  transition: transform 300ms var(--ease-snappy);
+}
+
+.navbar__link:hover::after {
+  transform: scaleX(1);
+  transform-origin: 0 center;
+}
+
+/* The active link already reads as selected via its filled pill. */
+.navbar__link--active::after { content: none; }
 
 /* Active highlight pill wraps the active label (do not hardcode widths). */
 /* --- Navbar (Mobile) + menu panel — laid out in the <=720 block below. --- */
@@ -1078,28 +1121,123 @@ body.is-scrolled .navbar {
     padding: 10px;
   }
 
+  /* Two real bars rather than swapping one masked glyph for another, so the
+     hamburger can actually morph into the X instead of cutting between two
+     images. background-color is cleared because .navbar-btn__icon otherwise
+     inherits the masked-icon idiom — with no mask-image left to punch a glyph
+     out of it, that colour would fill the whole 24x24 box. */
   .navbar-btn__icon {
+    position: relative;
     width: 24px;
     height: 24px;
-    background-color: var(--icon-brand);
-    -webkit-mask-image: url("Assets/icon-menu.svg");
-            mask-image: url("Assets/icon-menu.svg");
+    background-color: transparent;
   }
-  .navbar-btn[aria-expanded="true"] .navbar-btn__icon {
-    -webkit-mask-image: url("Assets/icon-x-close.svg");
-            mask-image: url("Assets/icon-x-close.svg");
+
+  .navbar-btn__icon::before,
+  .navbar-btn__icon::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 22px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: var(--icon-brand);
+    /* Overshoot curve — the bars swing slightly past the X and settle back,
+       which is what gives the toggle its spring rather than a flat rotate. */
+    transition: transform 500ms var(--ease-back);
+  }
+
+  .navbar-btn__icon::before { top: calc(50% - 5px); transform: translate(-50%, -50%); }
+  .navbar-btn__icon::after  { top: calc(50% + 5px); transform: translate(-50%, -50%); }
+
+  /* Closed → hover: each bar wipes out one edge and back in from the other,
+     staggered, so the affordance reads as alive before it's even pressed. */
+  .navbar-btn[aria-expanded="false"]:hover .navbar-btn__icon::before {
+    animation: navbar-bar-wipe 600ms var(--ease-power4);
+  }
+  .navbar-btn[aria-expanded="false"]:hover .navbar-btn__icon::after {
+    animation: navbar-bar-wipe 600ms var(--ease-power4) 100ms;
+  }
+
+  /* Open: the two bars converge on the centre line and cross. */
+  .navbar-btn[aria-expanded="true"] .navbar-btn__icon::before {
+    transform: translate(-50%, -50%) translateY(5px) rotate(45deg);
+  }
+  .navbar-btn[aria-expanded="true"] .navbar-btn__icon::after {
+    transform: translate(-50%, -50%) translateY(-5px) rotate(-45deg);
+  }
+
+  @keyframes navbar-bar-wipe {
+    0%   { transform: translate(-50%, -50%) translateX(0); }
+    49%  { transform: translate(-50%, -50%) translateX(140%); }
+    50%  { transform: translate(-50%, -50%) translateX(-140%); }
+    100% { transform: translate(-50%, -50%) translateX(0); }
   }
 
   /* Open menu is a full-screen takeover on the page surface — not a dropdown
-     panel: centred section list, wordmark artwork anchored to the bottom edge. */
+     panel: centred section list, wordmark artwork anchored to the bottom edge.
+     Its own surface is transparent because the wipe layers below paint it. */
   .mobile-menu:not([hidden]) {
     display: flex;
     position: fixed;
     inset: 0;
     z-index: 10;
     flex-direction: column;
-    background: var(--bg-primary);
+    background: transparent;
     overflow: hidden;
+  }
+
+  /* --- Layered colour wipe ---
+     Four panels sweep down together but at different speeds and delays, so
+     what lands reads as a chasing band of brand colour rather than one flat
+     curtain. The topmost layer is the page surface and it arrives last — it's
+     what the sweep resolves into, leaving the menu on its normal background
+     with the oranges having flashed past underneath. */
+  .mobile-menu__wipe {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .mobile-menu__layer {
+    position: absolute;
+    inset: 0;
+    transform: translateY(-100%);
+    transition: transform 520ms var(--ease-in-out-cubic);
+  }
+
+  .mobile-menu__layer:nth-child(1) {
+    z-index: 1;
+    background: var(--colour-orange-500);
+    transition-duration: 520ms;
+  }
+  .mobile-menu__layer:nth-child(2) {
+    z-index: 2;
+    background: var(--colour-orange-400);
+    transition-duration: 630ms;
+    transition-delay: 105ms;
+  }
+  .mobile-menu__layer:nth-child(3) {
+    z-index: 3;
+    background: var(--colour-orange-300);
+    transition-duration: 730ms;
+    transition-delay: 105ms;
+  }
+  .mobile-menu__layer:nth-child(4) {
+    z-index: 4;
+    background: var(--bg-primary);
+    transition-duration: 730ms;
+    transition-delay: 250ms;
+  }
+
+  .mobile-menu[data-open] .mobile-menu__layer { transform: translateY(0); }
+
+  /* Content rides above every wipe layer. */
+  .mobile-menu__links,
+  .mobile-menu__mark {
+    position: relative;
+    z-index: 5;
   }
 
   .mobile-menu__links {
@@ -1119,7 +1257,40 @@ body.is-scrolled .navbar {
     line-height: 60px;
     font-weight: var(--font-weight-medium);
     color: var(--text-secondary);
+    /* Links rise in behind the wipe, one after the next. The stagger lives on
+       the open state only; on the base rule it would stagger the exit too,
+       which reads as the menu struggling to close. */
+    opacity: 0;
+    transform: translateY(var(--space-3xl));
+    transition: opacity 320ms linear, transform 520ms var(--ease-out-cubic);
   }
+
+  .mobile-menu[data-open] .mobile-menu__link {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Staggered to start while the last wipe layer is still travelling. */
+  .mobile-menu[data-open] .mobile-menu__link:nth-child(1) { transition-delay: 420ms; }
+  .mobile-menu[data-open] .mobile-menu__link:nth-child(2) { transition-delay: 480ms; }
+  .mobile-menu[data-open] .mobile-menu__link:nth-child(3) { transition-delay: 540ms; }
+  .mobile-menu[data-open] .mobile-menu__link:nth-child(4) { transition-delay: 600ms; }
+
+  /* Closing: everything leaves at once, quickly. */
+  .mobile-menu:not([data-open]) .mobile-menu__link {
+    transition-duration: 160ms;
+    transition-delay: 0ms;
+  }
+
+  .mobile-menu__mark {
+    opacity: 0;
+    transition: opacity 320ms linear;
+  }
+  .mobile-menu[data-open] .mobile-menu__mark {
+    opacity: 1;
+    transition-delay: 560ms;
+  }
+
   .mobile-menu__link--active { color: var(--text-brand); }
 
   /* Full-bleed, flush to the bottom with the solid line cropped by the edge. */
@@ -1145,7 +1316,7 @@ body.is-scrolled .navbar {
     border-color: transparent;
   }
 
-  /* --- Featured: compact 116-tall band, copy left / photo right ---
+  /* --- Featured: compact 150-tall band, copy left / photo right ---
      Overrides the desktop overlap: the phone hero has clear air below the
      wordmark, so the card sits in normal flow at the same 24px (space/3xl)
      rhythm as every other section on this frame, instead of overlapping it. */
@@ -1153,7 +1324,7 @@ body.is-scrolled .navbar {
     /* Copy column takes 56%: at 40% the title had only 111px of usable width
        and "Crossroads 2026" (~150px) wrapped to two lines. */
     grid-template-columns: 56% 44%;
-    min-height: 116px;
+    min-height: 150px;
     margin-top: var(--space-md);   /* card sits just below the wordmark artwork */
     border-radius: var(--radius-xl);
   }
