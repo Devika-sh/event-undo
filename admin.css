@@ -600,6 +600,15 @@
 .a-table tbody tr:last-child td { border-bottom: none; }
 .a-table tbody tr:hover { background: var(--colour-gray-500); }
 
+/* Featured rows sort to the top of the Events table (renderEvents in
+   admin.js) and get a left accent bar + tinted background so "this is
+   pinned" reads at a glance, not just from the badge in the Status column. */
+.a-table tbody tr[data-featured] {
+  background: var(--bg-hover);
+  box-shadow: inset 3px 0 0 0 var(--border-brand);
+}
+.a-table tbody tr[data-featured]:hover { background: var(--colour-orange-100); }
+
 /* Group divider row — separates categories (or any grouped table) by
  * group_name instead of letting different groups run together. */
 .a-table__group td {
@@ -666,6 +675,22 @@
 .a-badge--live      { background: var(--bg-brand);   border-color: var(--bg-brand);   color: var(--text-white); }
 .a-badge--soft      { background: var(--bg-hover);   border-color: var(--border-active); color: var(--text-brand); }
 .a-badge--muted     { background: var(--bg-inactive); color: var(--text-tertiary); }
+
+/* Solid brand fill rather than --soft's tint: featured is a higher-priority
+   flag than a normal status badge, so it needs to out-rank it visually,
+   not blend into the same row of pills. */
+.a-badge--featured {
+  gap: var(--space-xs);
+  background: var(--bg-brand);
+  border-color: var(--bg-brand);
+  color: var(--text-white);
+}
+.a-badge--featured .a-badge__star {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  fill: currentColor;
+}
 
 /* ---- Empty / loading states --------------------------------------------- */
 
@@ -735,6 +760,11 @@
 .a-switch input:checked + .a-switch__track { background: var(--bg-brand); }
 .a-switch input:checked + .a-switch__track::after { transform: translateX(18px); }
 .a-switch input:focus-visible + .a-switch__track { outline: var(--width-xl) solid var(--border-brand); outline-offset: var(--space-xs); }
+
+/* At the MAX_FEATURED cap (admin.js) — an off switch stays interactive
+   (turning an already-featured event off always works), only the path
+   to turning a new one on is blocked. */
+.a-switch--disabled { cursor: not-allowed; opacity: 0.5; }
 
 /* ==========================================================================
    7. Modal

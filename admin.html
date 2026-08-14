@@ -439,18 +439,18 @@
             </div>
 
             <div class="a-panel" data-admin-only>
-              <div class="a-panel__head"><h2 class="a-panel__title">Featured event</h2></div>
+              <div class="a-panel__head"><h2 class="a-panel__title">Featured events</h2></div>
               <div class="a-panel__body">
                 <div class="a-form">
                   <div class="a-field">
-                    <label class="a-field__label" for="featured-select">
-                      Shown in the hero slot on Discover
-                    </label>
-                    <select class="a-select" id="featured-select">
-                      <option value="">None</option>
-                    </select>
+                    <span class="a-field__label" id="featured-picker-label">
+                      Shown in the homepage carousel, soonest first
+                    </span>
+                    <div class="a-chips" id="featured-picker" role="group"
+                         aria-labelledby="featured-picker-label"></div>
+                    <span class="a-field__hint" id="featured-picker-count"></span>
                   </div>
-                  <div><button class="a-btn" type="button" id="featured-save">Set featured</button></div>
+                  <div><button class="a-btn" type="button" id="featured-save">Save featured events</button></div>
                 </div>
               </div>
             </div>

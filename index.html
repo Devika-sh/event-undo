@@ -89,20 +89,40 @@
     <h1 class="sr-only">eventundo — Discover events</h1>
   </header>
 
-  <!-- ===== Featured Event ===== -->
-  <!-- Ships in its loading state: title and artwork shimmer until public-data.js
-       has a real featured event (it drops data-loading), or the whole section is
-       hidden if there is none. -->
-  <section class="featured" aria-labelledby="featured-title" data-loading>
-    <div class="featured__body">
-      <p class="featured__eyebrow">Featured Event</p>
-      <h2 class="featured__title" id="featured-title">
-        <span class="eu-skeleton" style="width:min(100%,320px);height:34px"></span>
-      </h2>
+  <!-- ===== Featured Events =====
+       A carousel, not a single hero: admin can mark up to 5 events featured
+       (Settings → Featured events) and they all show here, auto-advancing.
+       Ships in its loading state — one skeleton slide, shimmering — until
+       public-data.js has real featured events (it drops data-loading) or the
+       whole section hides if there are none. -->
+  <section class="featured" aria-label="Featured events" data-loading>
+    <div class="featured__viewport">
+      <div class="featured__track" id="featured-track">
+        <article class="featured__slide" aria-hidden="true">
+          <div class="featured__body">
+            <p class="featured__eyebrow">Featured Event</p>
+            <h2 class="featured__title">
+              <span class="eu-skeleton" style="width:min(100%,320px);height:34px"></span>
+            </h2>
+          </div>
+          <div class="featured__media">
+            <img class="featured__photo" alt="" width="602" height="367" />
+          </div>
+        </article>
+      </div>
     </div>
-    <div class="featured__media">
-      <img class="featured__photo" alt="" width="602" height="367" />
-    </div>
+
+    <!-- Paging chrome — hidden by public-data.js whenever there's only one
+         featured event, same idea as the Event Details "More Events" chevrons. -->
+    <button class="featured__chev featured__chev--prev" type="button"
+            aria-controls="featured-track" aria-label="Previous featured event" hidden>
+      <span class="featured__chev-icon icon-mask" aria-hidden="true"></span>
+    </button>
+    <button class="featured__chev featured__chev--next" type="button"
+            aria-controls="featured-track" aria-label="Next featured event" hidden>
+      <span class="featured__chev-icon icon-mask" aria-hidden="true"></span>
+    </button>
+    <div class="featured__dots" id="featured-dots" role="tablist" aria-label="Featured events" hidden></div>
   </section>
 
   <!-- ===== Search ===== -->

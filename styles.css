@@ -399,14 +399,40 @@ body.is-scrolled .navbar__link {
 }
 
 /* ==========================================================================
-   Featured Event card
-   Uses the Event Listing Card language: bg-white surface, border-brand, radius 2xl.
+   Featured Events carousel
+   Up to MAX_FEATURED (admin.js) events, each drawn in the Event Listing
+   Card language: bg-white surface, border-brand, radius 2xl. One slide at a
+   time, scroll-snapped, auto-advancing — see wireFeaturedCarousel in
+   public-data.js for the paging/autoplay logic this markup drives.
    ========================================================================== */
 
 .featured {
   position: relative;
   z-index: 2;                          /* sits above the masthead artwork */
   margin-top: calc(-1 * var(--space-md));  /* overlaps the wordmark's lower edge */
+}
+
+.featured__viewport { overflow: hidden; border-radius: var(--radius-2xl); }
+
+.featured__track {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  /* Mandatory, not the More Events track's proximity: a hero reads as one
+     slide at a time, never resting half-between two. */
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.featured__track::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .featured__track { scroll-behavior: auto; }
+}
+
+.featured__slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 480px;
   align-items: stretch;
@@ -469,6 +495,70 @@ body.is-scrolled .navbar__link {
   height: 100%;
   object-fit: cover;
   object-position: center top;
+}
+
+/* ---- Paging chrome (only shown when there's more than one slide) ---- */
+
+.featured__chev {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: var(--radius-full);
+  background: var(--bg-white);
+  border: var(--width-lg) solid var(--border-brand);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.featured__chev--prev { left: -26px; }
+.featured__chev--next { right: -26px; }
+
+.featured__chev-icon {
+  width: 18px;
+  height: 18px;
+  background-color: var(--icon-brand);
+  -webkit-mask-image: url("Assets/icon-chevron-left.svg");
+          mask-image: url("Assets/icon-chevron-left.svg");
+}
+.featured__chev--next .featured__chev-icon { transform: scaleX(-1); }
+
+.featured__chev:disabled {
+  border-color: var(--border-inactive);
+  cursor: default;
+}
+.featured__chev:disabled .featured__chev-icon { background-color: var(--icon-inactive); }
+.featured__chev:not(:disabled):hover { background: var(--bg-hover); }
+
+.featured__dots {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: var(--space-xl);
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-md);
+}
+
+.featured__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--colour-base-white);
+  border: var(--width-md) solid var(--border-brand);
+  opacity: 0.6;
+  padding: 0;
+  transition: opacity 160ms ease, background-color 160ms ease, width 160ms ease;
+}
+.featured__dot:hover { opacity: 1; }
+
+.featured__dot[aria-selected="true"] {
+  width: 20px;
+  background: var(--bg-brand);
+  opacity: 1;
 }
 
 /* ==========================================================================
@@ -1090,9 +1180,12 @@ body.is-scrolled .navbar__link {
   .navbar { gap: var(--space-2xl); padding: var(--space-md) var(--space-2xl); }
   .navbar__link { padding: var(--space-sm) var(--space-lg); }
   .page { padding: 0 var(--space-3xl) var(--space-3xl); }
-  .featured { grid-template-columns: 1fr 42%; min-height: 220px; }
+  .featured__slide { grid-template-columns: 1fr 42%; min-height: 220px; }
   .featured__body { padding: var(--space-4xl) var(--space-3xl); }
   .featured__title { font-size: var(--font-size-heading-h3); line-height: var(--line-height-heading-h3); }
+  .featured__chev { width: 44px; height: 44px; }
+  .featured__chev--prev { left: -20px; }
+  .featured__chev--next { right: -20px; }
   .filters { padding: 0; flex-direction: column; align-items: flex-start; }
   .footer { padding: var(--space-4xl) var(--space-3xl) 0; }
   .footer__mark { margin-inline: calc(-1 * var(--space-3xl)); }
@@ -1348,13 +1441,19 @@ body.is-scrolled .navbar__link {
      wordmark, so the card sits in normal flow at the same 24px (space/3xl)
      rhythm as every other section on this frame, instead of overlapping it. */
   .featured {
+    margin-top: var(--space-md);   /* card sits just below the wordmark artwork */
+  }
+  .featured__viewport { border-radius: var(--radius-xl); }
+  .featured__slide {
     /* Copy column takes 56%: at 40% the title had only 111px of usable width
        and "Crossroads 2026" (~150px) wrapped to two lines. */
     grid-template-columns: 56% 44%;
     min-height: 150px;
-    margin-top: var(--space-md);   /* card sits just below the wordmark artwork */
     border-radius: var(--radius-xl);
   }
+  /* No room for the -20px overhang at this width — the edge-to-edge track
+     scrolls by touch instead, with the dots below as the paging affordance. */
+  .featured__chev { display: none; }
   .featured__body {
     align-items: center;
     text-align: center;

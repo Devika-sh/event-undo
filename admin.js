@@ -2123,10 +2123,48 @@ async function loadSettings() {
     const { data } = await supabase.from('events_public').select('*').order('starts_at', { ascending: false });
     store.events = data || [];
   }
-  const featured = store.events.find((e) => e.is_featured);
-  $('#featured-select').innerHTML = '<option value="">None</option>' +
-    store.events.filter((e) => e.status === 'published').map((e) =>
-      `<option value="${esc(e.id)}"${featured?.id === e.id ? ' selected' : ''}>${esc(e.title)}</option>`).join('');
+  renderFeaturedPicker();
+}
+
+/** Chip multi-select for Settings → Featured events, capped at MAX_FEATURED —
+ *  same disable-the-rest-at-cap idiom as the public profile's interests
+ *  picker (public-data.js#refreshPicker), just admin-side and event-scoped. */
+function renderFeaturedPicker() {
+  const picker = $('#featured-picker');
+  const options = store.events.filter((e) => e.status === 'published');
+
+  picker.innerHTML = options.length
+    ? options.map((e) => `
+      <button class="chip${e.is_featured ? ' chip--selected' : ''}" type="button"
+              data-id="${esc(e.id)}">${esc(e.title)}</button>`).join('')
+    : '<span class="a-field__hint">No published events to feature yet.</span>';
+  refreshFeaturedPicker();
+
+  // Rebuilt every time Settings loads (an event may have been published or
+  // unpublished since), but the container itself persists — guard against
+  // stacking a duplicate listener on it each time.
+  if (picker.dataset.wired) return;
+  picker.dataset.wired = '1';
+  picker.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip || chip.disabled) return;
+    chip.classList.toggle('chip--selected');
+    refreshFeaturedPicker();
+  });
+}
+
+function refreshFeaturedPicker() {
+  const picker = $('#featured-picker');
+  const n = picker.querySelectorAll('.chip--selected').length;
+  const atCap = n >= MAX_FEATURED;
+
+  picker.querySelectorAll('.chip').forEach((chip) => {
+    chip.disabled = atCap && !chip.classList.contains('chip--selected');
+  });
+
+  $('#featured-picker-count').textContent = atCap
+    ? `${n} of ${MAX_FEATURED} — deselect one to swap it out.`
+    : `${n} of ${MAX_FEATURED} selected.`;
 }
 
 async function saveAccount(e) {
@@ -2178,18 +2216,46 @@ async function savePassword(e) {
 }
 
 async function saveFeatured() {
-  const id = $('#featured-select').value;
-  // The events_single_featured trigger clears the previous one, but an empty
-  // selection has no row to fire it, so unset explicitly.
-  if (!id) {
-    await supabase.from('events').update({ is_featured: false }).eq('is_featured', true);
-    toast('Featured slot cleared', 'success');
-  } else {
-    const { error } = await supabase.from('events').update({ is_featured: true }).eq('id', id);
-    if (error) { fail(error, 'setting the featured event'); return; }
-    toast('Featured event updated', 'success');
+  const chosen = new Set($$('#featured-picker .chip--selected').map((c) => c.dataset.id));
+  const wasFeatured = new Set(store.events.filter((e) => e.is_featured).map((e) => e.id));
+
+  const added = [...chosen].filter((id) => !wasFeatured.has(id));
+  const removed = [...wasFeatured].filter((id) => !chosen.has(id));
+  if (!added.length && !removed.length) return;
+
+  const btn = $('#featured-save');
+  btn.disabled = true;
+
+  if (removed.length) {
+    const { error } = await supabase.from('events').update({ is_featured: false }).in('id', removed);
+    if (error) {
+      fail(error, 'clearing a featured event');
+      btn.disabled = false;
+      await loadEvents();
+      renderFeaturedPicker();
+      return;
+    }
   }
-  loadEvents();
+
+  // One row at a time, not a single .in() update: the DB's cap trigger
+  // (enforce_featured_cap in supabase-schema.sql) counts already-featured
+  // rows to reject a 6th, and needs each addition committed before checking
+  // the next — a batched update would have every row race the same stale count.
+  for (const id of added) {
+    const { error } = await supabase.from('events').update({ is_featured: true }).eq('id', id);
+    if (error) {
+      fail(error, 'setting a featured event');
+      btn.disabled = false;
+      await loadEvents();
+      renderFeaturedPicker();
+      return;
+    }
+  }
+
+  btn.disabled = false;
+  toast('Featured events updated', 'success');
+  await loadEvents();
+  renderFeaturedPicker();
 }
 
 /* ---- Site (page title, favicon, link-preview card) ----------------------- */

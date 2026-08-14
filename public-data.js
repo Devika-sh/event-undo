@@ -271,53 +271,119 @@ function clearDiscoverSkeletons(message) {
   if (featured) featured.hidden = true;
 }
 
+/** Up to MAX_FEATURED (admin.js) events, shown one at a time in an
+ *  auto-advancing carousel. Falls back to the single most recent event when
+ *  nothing is explicitly marked featured, same as the old single-hero
+ *  version did, so the section is never empty on a fresh install where no
+ *  one has featured anything yet. */
 function hydrateFeatured() {
   const section = document.querySelector('.featured');
-  const featured = allEvents.find((e) => e.is_featured) || allEvents[0];
-  // No event to feature — the hero comes off the page rather than sitting
-  // there as a shimmer with nothing behind it.
-  if (!featured) { if (section) section.hidden = true; return; }
+  if (!section) return;
 
-  // Swaps the skeleton hero for the real one now that there's something to show.
-  if (section) section.removeAttribute('data-loading');
+  const chosen = allEvents.filter((e) => e.is_featured);
+  const slides = chosen.length ? chosen : (allEvents[0] ? [allEvents[0]] : []);
 
-  const title = document.querySelector('.featured__title');
-  const photo = document.querySelector('.featured__photo');
-  if (title) title.textContent = featured.title;
-  if (photo) {
-    photo.src = featured.thumbnail_url || featured.banner_url || FALLBACK_IMAGE;
-    photo.alt = featured.title;
+  if (!slides.length) { section.hidden = true; return; }
+
+  section.removeAttribute('data-loading');
+
+  const track = document.getElementById('featured-track');
+  track.innerHTML = slides.map(featuredSlideMarkup).join('');
+
+  wireFeaturedCarousel(section, track, slides.length);
+}
+
+function featuredSlideMarkup(event) {
+  const title = esc(event.title);
+  const href = 'event-details.html?id=' + encodeURIComponent(event.id);
+  return `
+  <article class="featured__slide">
+    <a class="featured__card-link" href="${href}" aria-label="View ${title}"></a>
+    <div class="featured__body">
+      <p class="featured__eyebrow">Featured Event</p>
+      <h2 class="featured__title">${title}</h2>
+      <a class="featured__link" href="${href}">View event</a>
+    </div>
+    <div class="featured__media">
+      <img class="featured__photo" src="${esc(event.thumbnail_url || event.banner_url || FALLBACK_IMAGE)}"
+           alt="" />
+    </div>
+  </article>`;
+}
+
+/** Paging (chevrons, dots, swipe/scroll) plus autoplay for the featured
+ *  carousel. Runs once per hydrateFeatured() call — index.html loads this
+ *  module once and never re-fetches Discover's events, so there's no
+ *  reload-and-rewire case to guard against the way the tag/interest chip
+ *  pickers elsewhere in this file have to. */
+function wireFeaturedCarousel(section, track, count) {
+  const prev = section.querySelector('.featured__chev--prev');
+  const next = section.querySelector('.featured__chev--next');
+  const dotsWrap = document.getElementById('featured-dots');
+
+  const multi = count > 1;
+  prev.hidden = !multi;
+  next.hidden = !multi;
+  dotsWrap.hidden = !multi;
+  if (!multi) return;   // one slide: nothing to page or advance between
+
+  dotsWrap.innerHTML = Array.from({ length: count }, (_, i) => `
+    <button class="featured__dot" type="button" role="tab"
+            aria-label="Go to featured event ${i + 1}" aria-selected="${i === 0}"></button>`).join('');
+  const dots = [...dotsWrap.children];
+
+  let index = 0;
+  const setIndex = (i) => {
+    index = (i + count) % count;
+    track.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
+    dots.forEach((d, di) => d.setAttribute('aria-selected', String(di === index)));
+  };
+
+  // Scrolling (swipe, trackpad, or the programmatic scrollTo above) is the
+  // one source of truth for "which slide is current" — reading it back
+  // keeps the dots in sync with a manual swipe, not just button clicks.
+  let scrollTimer = null;
+  track.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const i = Math.round(track.scrollLeft / track.clientWidth);
+      index = (i + count) % count;
+      dots.forEach((d, di) => d.setAttribute('aria-selected', String(di === index)));
+    }, 100);
+  }, { passive: true });
+
+  prev.addEventListener('click', () => { setIndex(index - 1); resetAutoplay(); });
+  next.addEventListener('click', () => { setIndex(index + 1); resetAutoplay(); });
+  dots.forEach((dot, i) => dot.addEventListener('click', () => { setIndex(i); resetAutoplay(); }));
+
+  // Autoplay — off outright under reduced motion (manual paging still
+  // works), and paused rather than stopped by hover/focus/touch so it comes
+  // back once the visitor's attention actually moves on.
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const AUTOPLAY_MS = 5000;
+  let timer = null;
+
+  function startAutoplay() {
+    if (reduceMotion) return;
+    stopAutoplay();
+    timer = setInterval(() => setIndex(index + 1), AUTOPLAY_MS);
+  }
+  function stopAutoplay() {
+    clearInterval(timer);
+    timer = null;
+  }
+  function resetAutoplay() {
+    if (!reduceMotion) startAutoplay();
   }
 
-  const href = 'event-details.html?id=' + encodeURIComponent(featured.id);
-  const label = 'View ' + featured.title;
+  section.addEventListener('mouseenter', stopAutoplay);
+  section.addEventListener('mouseleave', startAutoplay);
+  section.addEventListener('focusin', stopAutoplay);
+  section.addEventListener('focusout', startAutoplay);
+  section.addEventListener('touchstart', stopAutoplay, { passive: true });
+  section.addEventListener('touchend', () => setTimeout(startAutoplay, AUTOPLAY_MS), { passive: true });
 
-  // The whole card opens the event — same transparent-overlay pattern as the
-  // grid's own .card__link, sitting under the "View event" button (desktop
-  // only; hidden on mobile, see styles.css) so the button keeps its own hit
-  // target instead of double-handling the click.
-  if (section) {
-    let cardLink = section.querySelector('.featured__card-link');
-    if (!cardLink) {
-      cardLink = document.createElement('a');
-      cardLink.className = 'featured__card-link';
-      section.prepend(cardLink);
-    }
-    cardLink.href = href;
-    cardLink.setAttribute('aria-label', label);
-  }
-
-  const body = document.querySelector('.featured__body');
-  if (body) {
-    let link = body.querySelector('.featured__link');
-    if (!link) {
-      link = document.createElement('a');
-      link.className = 'featured__link';
-      link.textContent = 'View event';
-      body.append(link);
-    }
-    link.href = href;
-  }
+  startAutoplay();
 }
 
 /** Rebuilds the chip row from `categories`, keeping the dot separators between
