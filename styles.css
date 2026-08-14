@@ -128,9 +128,7 @@ body.page-exit {
      just gets there without travelling. The menu's wipe layers are the one
      thing that must not simply stop — they'd be left covering the screen —
      so they snap to their open position instead of sliding to it. */
-  .navbar,
   .navbar-mobile,
-  .navbar__link::after,
   .navbar-btn__icon::before,
   .navbar-btn__icon::after,
   .mobile-menu__layer,
@@ -168,7 +166,8 @@ body.page-exit {
 
 @media (min-width: 721px) {
   .head-bar-spacer {
-    height: 62px; /* measured .navbar pill height (padding + border + line-height) */
+    /* Same 48px bar as mobile — only the top offset grows (space/4xl). */
+    height: 98px;
   }
 }
 
@@ -222,180 +221,323 @@ body.is-scrolled .scroll-shade { opacity: 1; }
   height: auto;
 }
 
-/* Fixed at every width — the nav pill stays pinned to the viewport as the
-   page scrolls, on phone as much as desktop, so the logo (below) has a fixed
-   home to animate into and .scroll-shade's blur has an actual sticky bar to
-   back. Was absolute-on-phone before; that let the mobile bar scroll away
-   with the hero instead of staying put. */
+/* Fixed at every width — the bar stays pinned to the viewport as the page
+   scrolls, so .scroll-shade's blur has an actual sticky bar to back.
+   14px insets on phone; from 721px it widens to the shared 1440 content
+   bounds, so the bar lines up with the page grid under it and with every
+   other page's header row. */
 .navbar-wrap {
   position: fixed;
-  top: var(--space-4xl);
-  left: 0;
-  right: 0;
-  max-width: 1440px;
-  margin-inline: auto;
+  top: var(--space-3xl);
+  left: 14px;
+  right: 14px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
   /* Above every other page's z-indexed content (the Profile carousel's
      chevrons, at 5, are the highest) — otherwise a pinned nav with a lower
      z-index can end up buried under scrolling content instead of above it. */
   z-index: 20;
 }
 
-/* Hidden at rest — the hero picture already carries the wordmark. Revealed
-   to the left of the pinned pill once body picks up .is-scrolled (see the
-   shared scroll listener in each page's script).
-   A real flex sibling of .navbar now (was position: absolute, pinned to a
-   fixed offset off the wrap's edge) — collapsed to zero width pre-scroll so
-   it costs nothing in the layout, then widens open in step with the pill
-   growing beside it, rather than a separate decoration floating near it. Only
-   shown from 1300px up: the nav pill's own link spacing already runs ~850px
-   wide, so below that there isn't reliably clear room beside it for the logo
-   without the two crowding or overlapping. */
-.masthead__logo { display: none; }
-
-@media (min-width: 1300px) {
-  .masthead__logo {
-    display: flex;
-    align-items: center;
-    flex: none;
-    width: 0;
-    margin-right: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: width 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                margin-right 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                opacity 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  }
-
-  .masthead__logo img { flex: none; width: 151px; height: 25px; }
-
-  body.is-scrolled .masthead__logo {
-    width: 151px;
-    margin-right: var(--space-2xl);
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* Collapses back with the pill when the bar hides on scroll-down, instead
-     of sitting there fully opened with nothing left beside it. */
-  body.is-nav-hidden .masthead__logo {
-    width: 0;
-    margin-right: 0;
-    opacity: 0;
+@media (min-width: 721px) {
+  .navbar-wrap {
+    top: var(--space-4xl);
+    left: 0;
+    right: 0;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--space-5xl);
   }
 }
 
-.navbar {
+/* Retired along with the desktop link pill (see .navbar below). This was the
+   wordmark that flew in beside that pill on scroll; the bar that replaced it
+   carries its own wordmark permanently (.navbar-mobile__logo), so there is
+   nothing left for it to fly into. Kept in the markup — hidden here rather
+   than deleted from five pages — so the pill nav stays one CSS revert away. */
+.masthead__logo { display: none; }
+
+/* --- Navbar (Desktop link pill) — retired --------------------------------
+   The site now navigates through one bar at every width: wordmark left,
+   hamburger right, opening the full-screen menu. That used to be the phone
+   layout only, with this row of links taking over from 721px up — two
+   navigations to design, animate and keep in sync, and only the phone one
+   carried the wipe/stagger motion worth keeping.
+   Hidden rather than deleted from five pages' markup, so going back to the
+   link pill is a CSS change rather than an HTML one. Its own styling (link
+   type, hover underline, active pill) went with it. */
+.navbar { display: none; }
+
+/* ==========================================================================
+   Navbar (universal) — wordmark + hamburger, and the menu it opens
+   Was the phone-only layout; now the whole site's navigation, so everything
+   here sits at global scope rather than inside the <=720 block below.
+   ========================================================================== */
+
+.navbar-mobile {
   display: flex;
   align-items: center;
-  gap: var(--space-5xl);
-  background: var(--bg-white);            /* flagged: Figma binds text/text-white */
-  border: var(--width-lg) solid var(--border-inactive); /* flagged: Figma binds text/text-secondary */
-  border-radius: var(--radius-3xl);
-  padding: var(--space-lg) var(--space-4xl);
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 30px;                 /* raw 30 in Figma — off the space scale */
+  background: var(--bg-white);
+  border: var(--width-lg) solid var(--border-inactive);
+  border-radius: var(--radius-full);
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-  /* Never wider than the viewport itself — without this the full-size gap/padding
-     below (measured against the desktop frame) pushes the pill past the edge on
-     narrower desktop/tablet widths, between here and the 720px mobile-nav swap. */
-  max-width: calc(100vw - (2 * var(--space-3xl)));
-  transition: box-shadow 320ms ease, gap 240ms ease, padding 240ms ease, max-width 240ms ease,
+  /* The bar has to out-paint the menu it opens (z-index 10) — both are
+     children of the same wrap, so without this the overlay would cover the
+     very X that closes it. */
+  position: relative;
+  z-index: 11;
+  transition: box-shadow 320ms ease, background 320ms ease, border-color 320ms ease,
               transform 400ms var(--ease-out-cubic);
 }
 
+.navbar-mobile__logo { display: block; }
+.navbar-mobile__logo img { display: block; width: 99px; height: auto; }
+
 /* --- Hide on scroll down, reveal on scroll up ----------------------------
-   The transform goes on the visible pills themselves, never on the wrappers
-   around them (.navbar-wrap, .profile-head__bar, .detail-head__bar): several
-   pages nest .mobile-menu inside that wrapper, and a transformed ancestor
-   becomes the containing block for its `position: fixed` descendants — the
+   The transform goes on the visible bar itself, never on the wrapper around
+   it (.navbar-wrap, .profile-head__bar, .detail-head__bar): several pages
+   nest .mobile-menu inside that wrapper, and a transformed ancestor becomes
+   the containing block for its `position: fixed` descendants — the
    full-screen menu would stop tracking the viewport. Same trap the page-slide
    animation on `body` documents above.
    Asymmetric curves, as on the reference: ease-in to leave (gets out of the
    way quickly), ease-out to return (arrives softly). */
-body.is-nav-hidden .navbar,
 body.is-nav-hidden .navbar-mobile {
   transform: translateY(calc(-100% - var(--space-4xl)));
   transition-timing-function: var(--ease-in-cubic);
   transition-duration: 500ms;
 }
 
-/* The fly-in logo collapsing with the pill when hidden (see the ≥1300px
-   block above) already keeps it from being left behind; the blur backing the
-   nav has nothing left to back once it's gone either. */
+/* The blur backing the nav has nothing left to back once the bar is gone. */
 body.is-scrolled.is-nav-hidden .scroll-shade { opacity: 0; }
 
 /* Small lift once the page scrolls — no shadow token exists in the design
    system (the footer spec explicitly says "no shadows"), so this stays a
-   deliberately light, raw rgba rather than a bound token. Applied to the
-   pill itself (not the invisible bar/wrap around it) so it reads as the
-   nav lifting off the page, not a box floating behind it.
-   Also tightens the pill's own gap/padding down to the same compact tokens
-   the ≤1100px tablet breakpoint uses — with the logo now opening up beside
-   it (above), the pill shrinking to make room reads as one bar coming
-   together, not the logo just being squeezed in next to a still-full-size
-   one. Same values as the tablet rule below, so a scrolled+narrow visitor
-   never sees the two disagree. */
-body.is-scrolled .navbar {
-  gap: var(--space-2xl);
-  padding: var(--space-md) var(--space-2xl);
+   deliberately light, raw rgba rather than a bound token. Applied to the bar
+   itself (not the invisible wrap around it) so it reads as the nav lifting
+   off the page, not a box floating behind it. */
+body.is-scrolled .navbar-mobile {
   box-shadow: 0 var(--space-xs) var(--space-lg) 0 rgba(0, 0, 0, 0.1);
 }
 
-body.is-scrolled .navbar__link {
-  padding: var(--space-sm) var(--space-lg);
+/* Bare 24x24 icon, no chip — padded out to a 44x44 tap target without
+   changing the icon box the design specifies. */
+.navbar-btn {
+  display: grid;
+  place-items: center;
+  box-sizing: content-box;
+  width: 24px;
+  height: 24px;
+  margin: -10px;
+  padding: 10px;
 }
 
-.navbar__link {
+/* Two real bars rather than swapping one masked glyph for another, so the
+   hamburger can actually morph into the X instead of cutting between two
+   images. background-color is cleared because .navbar-btn__icon otherwise
+   inherits the masked-icon idiom — with no mask-image left to punch a glyph
+   out of it, that colour would fill the whole 24x24 box. */
+.navbar-btn__icon {
   position: relative;
-  font-size: var(--font-size-body-sm);   /* Body xl/Medium */
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  padding: var(--space-md) var(--space-3xl);
-  border-radius: var(--radius-full);
-  line-height: var(--line-height-body-sm);
-  white-space: nowrap;
-  transition: color 120ms ease, background-color 120ms ease, padding 240ms ease;
+  width: 24px;
+  height: 24px;
+  background-color: transparent;
 }
 
-/* No hover variant exists in Figma — derived from tokens, flag for design. */
-.navbar__link:hover { color: var(--text-primary); }
-
-/* Direction-aware underline: the rule wipes in from the edge the pointer
-   entered and retracts toward the edge it leaves by, because the origin flips
-   between the two rules rather than the bar simply fading in place. */
-.navbar__link::after {
+.navbar-btn__icon::before,
+.navbar-btn__icon::after {
   content: '';
   position: absolute;
-  left: var(--space-3xl);
-  right: var(--space-3xl);
-  bottom: var(--space-sm);
-  height: 1.5px;
+  left: 50%;
+  width: 22px;
+  height: 2px;
   border-radius: var(--radius-full);
-  background: var(--text-primary);
-  transform: scaleX(0);
-  transform-origin: 100% center;
-  transition: transform 300ms var(--ease-snappy);
+  background: var(--icon-brand);
+  /* Overshoot curve — the bars swing slightly past the X and settle back,
+     which is what gives the toggle its spring rather than a flat rotate. */
+  transition: transform 500ms var(--ease-back);
 }
 
-.navbar__link:hover::after {
-  transform: scaleX(1);
-  transform-origin: 0 center;
+.navbar-btn__icon::before { top: calc(50% - 5px); transform: translate(-50%, -50%); }
+.navbar-btn__icon::after  { top: calc(50% + 5px); transform: translate(-50%, -50%); }
+
+/* Closed → hover: each bar wipes out one edge and back in from the other,
+   staggered, so the affordance reads as alive before it's even pressed.
+   Worth far more now than it was on phone, where there is no hover at all. */
+.navbar-btn[aria-expanded="false"]:hover .navbar-btn__icon::before {
+  animation: navbar-bar-wipe 600ms var(--ease-power4);
+}
+.navbar-btn[aria-expanded="false"]:hover .navbar-btn__icon::after {
+  animation: navbar-bar-wipe 600ms var(--ease-power4) 100ms;
 }
 
-/* The active link already reads as selected via its filled pill. */
-.navbar__link--active::after { content: none; }
+/* Open: the two bars converge on the centre line and cross. */
+.navbar-btn[aria-expanded="true"] .navbar-btn__icon::before {
+  transform: translate(-50%, -50%) translateY(5px) rotate(45deg);
+}
+.navbar-btn[aria-expanded="true"] .navbar-btn__icon::after {
+  transform: translate(-50%, -50%) translateY(-5px) rotate(-45deg);
+}
 
-/* Active highlight pill wraps the active label (do not hardcode widths). */
-/* --- Navbar (Mobile) + menu panel — laid out in the <=720 block below. --- */
-.navbar-mobile { display: none; }
+@keyframes navbar-bar-wipe {
+  0%   { transform: translate(-50%, -50%) translateX(0); }
+  49%  { transform: translate(-50%, -50%) translateX(140%); }
+  50%  { transform: translate(-50%, -50%) translateX(-140%); }
+  100% { transform: translate(-50%, -50%) translateX(0); }
+}
+
+/* Open menu is a full-screen takeover on the page surface — not a dropdown
+   panel: centred section list, wordmark artwork anchored to the bottom edge.
+   Its own surface is transparent because the wipe layers below paint it. */
 .mobile-menu { display: none; }
 
-.navbar__link--active,
-.navbar__link--active:hover {
-  background: var(--bg-brand);
-  color: var(--text-white);
+.mobile-menu:not([hidden]) {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  flex-direction: column;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* --- Layered colour wipe ---
+   Four panels sweep down together but at different speeds and delays, so
+   what lands reads as a chasing band of brand colour rather than one flat
+   curtain. The topmost layer is the page surface and it arrives last — it's
+   what the sweep resolves into, leaving the menu on its normal background
+   with the oranges having flashed past underneath. */
+.mobile-menu__wipe {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-menu__layer {
+  position: absolute;
+  inset: 0;
+  transform: translateY(-100%);
+  transition: transform 520ms var(--ease-in-out-cubic);
+}
+
+.mobile-menu__layer:nth-child(1) {
+  z-index: 1;
+  background: var(--colour-orange-500);
+  transition-duration: 520ms;
+}
+.mobile-menu__layer:nth-child(2) {
+  z-index: 2;
+  background: var(--colour-orange-400);
+  transition-duration: 630ms;
+  transition-delay: 105ms;
+}
+.mobile-menu__layer:nth-child(3) {
+  z-index: 3;
+  background: var(--colour-orange-300);
+  transition-duration: 730ms;
+  transition-delay: 105ms;
+}
+.mobile-menu__layer:nth-child(4) {
+  z-index: 4;
+  background: var(--bg-primary);
+  transition-duration: 730ms;
+  transition-delay: 250ms;
+}
+
+.mobile-menu[data-open] .mobile-menu__layer { transform: translateY(0); }
+
+/* Content rides above every wipe layer. */
+.mobile-menu__links,
+.mobile-menu__mark {
+  position: relative;
+  z-index: 5;
+}
+
+.mobile-menu__links {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4xl);        /* 48 between links */
+  padding-top: 72px;            /* clears the nav row above */
+}
+
+.mobile-menu__link {
+  font-size: var(--font-size-heading-h2);        /* 48 — Display l */
+  /* 60 is raw, off the line-height scale (h2 is 56) — but the frame's text
+     boxes are 60, and 60 + 48 gap is what yields its 108px link pitch. */
+  line-height: 60px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  /* Links rise in behind the wipe, one after the next. The stagger lives on
+     the open state only; on the base rule it would stagger the exit too,
+     which reads as the menu struggling to close. */
+  opacity: 0;
+  transform: translateY(var(--space-3xl));
+  transition: opacity 320ms linear, transform 520ms var(--ease-out-cubic);
+}
+
+.mobile-menu[data-open] .mobile-menu__link {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered to start while the last wipe layer is still travelling. */
+.mobile-menu[data-open] .mobile-menu__link:nth-child(1) { transition-delay: 420ms; }
+.mobile-menu[data-open] .mobile-menu__link:nth-child(2) { transition-delay: 480ms; }
+.mobile-menu[data-open] .mobile-menu__link:nth-child(3) { transition-delay: 540ms; }
+.mobile-menu[data-open] .mobile-menu__link:nth-child(4) { transition-delay: 600ms; }
+
+/* Closing: everything leaves at once, quickly. */
+.mobile-menu:not([data-open]) .mobile-menu__link {
+  transition-duration: 160ms;
+  transition-delay: 0ms;
+}
+
+.mobile-menu__link:hover { color: var(--text-primary); }
+.mobile-menu__link--active { color: var(--text-brand); }
+
+/* Full-bleed, flush to the bottom with the solid line cropped by the edge.
+   Asset (428x274) matches the frame's wordmark group (428x273.64) almost
+   exactly, so it sits full-bleed at its natural size — no fudge margin
+   needed. Capped on desktop: at 1440 the artwork would otherwise scale to
+   ~920 tall and swallow the link list above it. */
+.mobile-menu__mark {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+  transition: opacity 320ms linear;
+}
+.mobile-menu[data-open] .mobile-menu__mark {
+  opacity: 1;
+  transition-delay: 560ms;
+}
+
+@media (min-width: 721px) {
+  .mobile-menu__mark {
+    width: auto;
+    max-width: 100%;
+    max-height: 274px;
+    margin-inline: auto;
+  }
+}
+
+/* While the menu is open the bar drops its pill entirely — the wordmark and
+   the X sit directly on the page surface the wipe resolved to. */
+.navbar-wrap[data-menu-open] .navbar-mobile,
+.org-head[data-menu-open] .navbar-mobile,
+.profile-head__bar[data-menu-open] .navbar-mobile,
+.detail-head__bar[data-menu-open] .navbar-mobile {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* ==========================================================================
@@ -1173,12 +1315,9 @@ body.is-scrolled .navbar__link {
 /* --- Tablet. The featured card keeps its side-by-side split (both the desktop and
        phone frames put copy left, photo right); only its proportions tighten. --- */
 @media (max-width: 1100px) {
-  /* Pill's full-size gap/padding (measured for the wide desktop frame) is wider
-     than the pill needs to be down here — tighten it so the link row keeps
-     fitting comfortably down to the 720px mobile-nav swap, animating smoothly
-     via the transition already on .navbar / .navbar__link. */
-  .navbar { gap: var(--space-2xl); padding: var(--space-md) var(--space-2xl); }
-  .navbar__link { padding: var(--space-sm) var(--space-lg); }
+  /* The desktop link pill used to tighten its gap/padding here so the row
+     kept fitting down to the 720px swap. The bar that replaced it is a
+     two-item flex row that fits at any width, so it needs no such step. */
   .page { padding: 0 var(--space-3xl) var(--space-3xl); }
   .featured__slide { grid-template-columns: 1fr 42%; min-height: 220px; }
   .featured__body { padding: var(--space-4xl) var(--space-3xl); }
@@ -1204,236 +1343,6 @@ body.is-scrolled .navbar__link {
   .masthead__mark {
     width: 92.5%;
     margin-inline: auto;
-  }
-
-  /* --- Nav: desktop link bar out, mobile bar in --- */
-  .navbar { display: none; }
-
-  .navbar-wrap {
-    top: var(--space-3xl);
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .navbar-mobile {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 48px;
-    padding: 0 30px;                 /* raw 30 in Figma — off the space scale */
-    background: var(--bg-white);
-    border: var(--width-lg) solid var(--border-inactive);
-    border-radius: var(--radius-full);
-  }
-
-  .navbar-mobile__logo { display: block; }
-  .navbar-mobile__logo img { display: block; width: 99px; height: auto; }
-
-  /* Bare 24x24 icon, no chip — padded out to a 44x44 tap target without
-     changing the icon box the design specifies. */
-  .navbar-btn {
-    display: grid;
-    place-items: center;
-    box-sizing: content-box;
-    width: 24px;
-    height: 24px;
-    margin: -10px;
-    padding: 10px;
-  }
-
-  /* Two real bars rather than swapping one masked glyph for another, so the
-     hamburger can actually morph into the X instead of cutting between two
-     images. background-color is cleared because .navbar-btn__icon otherwise
-     inherits the masked-icon idiom — with no mask-image left to punch a glyph
-     out of it, that colour would fill the whole 24x24 box. */
-  .navbar-btn__icon {
-    position: relative;
-    width: 24px;
-    height: 24px;
-    background-color: transparent;
-  }
-
-  .navbar-btn__icon::before,
-  .navbar-btn__icon::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    width: 22px;
-    height: 2px;
-    border-radius: var(--radius-full);
-    background: var(--icon-brand);
-    /* Overshoot curve — the bars swing slightly past the X and settle back,
-       which is what gives the toggle its spring rather than a flat rotate. */
-    transition: transform 500ms var(--ease-back);
-  }
-
-  .navbar-btn__icon::before { top: calc(50% - 5px); transform: translate(-50%, -50%); }
-  .navbar-btn__icon::after  { top: calc(50% + 5px); transform: translate(-50%, -50%); }
-
-  /* Closed → hover: each bar wipes out one edge and back in from the other,
-     staggered, so the affordance reads as alive before it's even pressed. */
-  .navbar-btn[aria-expanded="false"]:hover .navbar-btn__icon::before {
-    animation: navbar-bar-wipe 600ms var(--ease-power4);
-  }
-  .navbar-btn[aria-expanded="false"]:hover .navbar-btn__icon::after {
-    animation: navbar-bar-wipe 600ms var(--ease-power4) 100ms;
-  }
-
-  /* Open: the two bars converge on the centre line and cross. */
-  .navbar-btn[aria-expanded="true"] .navbar-btn__icon::before {
-    transform: translate(-50%, -50%) translateY(5px) rotate(45deg);
-  }
-  .navbar-btn[aria-expanded="true"] .navbar-btn__icon::after {
-    transform: translate(-50%, -50%) translateY(-5px) rotate(-45deg);
-  }
-
-  @keyframes navbar-bar-wipe {
-    0%   { transform: translate(-50%, -50%) translateX(0); }
-    49%  { transform: translate(-50%, -50%) translateX(140%); }
-    50%  { transform: translate(-50%, -50%) translateX(-140%); }
-    100% { transform: translate(-50%, -50%) translateX(0); }
-  }
-
-  /* Open menu is a full-screen takeover on the page surface — not a dropdown
-     panel: centred section list, wordmark artwork anchored to the bottom edge.
-     Its own surface is transparent because the wipe layers below paint it. */
-  .mobile-menu:not([hidden]) {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    z-index: 10;
-    flex-direction: column;
-    background: transparent;
-    overflow: hidden;
-  }
-
-  /* --- Layered colour wipe ---
-     Four panels sweep down together but at different speeds and delays, so
-     what lands reads as a chasing band of brand colour rather than one flat
-     curtain. The topmost layer is the page surface and it arrives last — it's
-     what the sweep resolves into, leaving the menu on its normal background
-     with the oranges having flashed past underneath. */
-  .mobile-menu__wipe {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .mobile-menu__layer {
-    position: absolute;
-    inset: 0;
-    transform: translateY(-100%);
-    transition: transform 520ms var(--ease-in-out-cubic);
-  }
-
-  .mobile-menu__layer:nth-child(1) {
-    z-index: 1;
-    background: var(--colour-orange-500);
-    transition-duration: 520ms;
-  }
-  .mobile-menu__layer:nth-child(2) {
-    z-index: 2;
-    background: var(--colour-orange-400);
-    transition-duration: 630ms;
-    transition-delay: 105ms;
-  }
-  .mobile-menu__layer:nth-child(3) {
-    z-index: 3;
-    background: var(--colour-orange-300);
-    transition-duration: 730ms;
-    transition-delay: 105ms;
-  }
-  .mobile-menu__layer:nth-child(4) {
-    z-index: 4;
-    background: var(--bg-primary);
-    transition-duration: 730ms;
-    transition-delay: 250ms;
-  }
-
-  .mobile-menu[data-open] .mobile-menu__layer { transform: translateY(0); }
-
-  /* Content rides above every wipe layer. */
-  .mobile-menu__links,
-  .mobile-menu__mark {
-    position: relative;
-    z-index: 5;
-  }
-
-  .mobile-menu__links {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-4xl);        /* 48 between links */
-    padding-top: 72px;            /* clears the nav row above */
-  }
-
-  .mobile-menu__link {
-    font-size: var(--font-size-heading-h2);        /* 48 — Display l */
-    /* 60 is raw, off the line-height scale (h2 is 56) — but the frame's text
-       boxes are 60, and 60 + 48 gap is what yields its 108px link pitch. */
-    line-height: 60px;
-    font-weight: var(--font-weight-medium);
-    color: var(--text-secondary);
-    /* Links rise in behind the wipe, one after the next. The stagger lives on
-       the open state only; on the base rule it would stagger the exit too,
-       which reads as the menu struggling to close. */
-    opacity: 0;
-    transform: translateY(var(--space-3xl));
-    transition: opacity 320ms linear, transform 520ms var(--ease-out-cubic);
-  }
-
-  .mobile-menu[data-open] .mobile-menu__link {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* Staggered to start while the last wipe layer is still travelling. */
-  .mobile-menu[data-open] .mobile-menu__link:nth-child(1) { transition-delay: 420ms; }
-  .mobile-menu[data-open] .mobile-menu__link:nth-child(2) { transition-delay: 480ms; }
-  .mobile-menu[data-open] .mobile-menu__link:nth-child(3) { transition-delay: 540ms; }
-  .mobile-menu[data-open] .mobile-menu__link:nth-child(4) { transition-delay: 600ms; }
-
-  /* Closing: everything leaves at once, quickly. */
-  .mobile-menu:not([data-open]) .mobile-menu__link {
-    transition-duration: 160ms;
-    transition-delay: 0ms;
-  }
-
-  .mobile-menu__mark {
-    opacity: 0;
-    transition: opacity 320ms linear;
-  }
-  .mobile-menu[data-open] .mobile-menu__mark {
-    opacity: 1;
-    transition-delay: 560ms;
-  }
-
-  .mobile-menu__link--active { color: var(--text-brand); }
-
-  /* Full-bleed, flush to the bottom with the solid line cropped by the edge. */
-  /* Asset (428x274) matches the frame's wordmark group (428x273.64) almost
-     exactly, so it sits full-bleed at its natural size — no fudge margin needed. */
-  .mobile-menu__mark {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  /* While the menu is open the bar drops its pill entirely — the logo and the
-     X sit directly on the page surface. */
-  .navbar-wrap[data-menu-open] {
-    position: fixed;
-    top: var(--space-3xl);
-    left: 14px;
-    right: 14px;
-    z-index: 11;
-  }
-  .navbar-wrap[data-menu-open] .navbar-mobile {
-    background: transparent;
-    border-color: transparent;
   }
 
   /* --- Featured: compact 150-tall band, copy left / photo right ---
@@ -2164,6 +2073,176 @@ body.is-scrolled .navbar__link {
   line-height: 1;
 }
 .a-dropzone__remove:hover { background: var(--bg-hover); color: var(--text-brand); }
+
+.a-dropzone__thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--bg-hover);
+}
+
+/* Text label + icon, not an icon-only button — "Crop" reads as an action on
+   a file that's already attached, not a second way to attach one, which an
+   unlabelled glyph next to Browse/Remove could easily be mistaken for. */
+.a-dropzone__crop {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  border: var(--width-lg) solid var(--border-inactive);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-3xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+.a-dropzone__crop svg { width: 13px; height: 13px; }
+.a-dropzone__crop:hover { border-color: var(--border-brand); color: var(--text-brand); }
+
+/* ==========================================================================
+   CROPPER
+   Pan-and-zoom crop overlay opened from any dropzone's "Crop" button
+   (dropzone.js). One instance, built lazily and reused by every upload
+   field on the page — profile photo, event thumbnail/banner, org logo,
+   team photo, site favicon, link-preview image.
+   ========================================================================== */
+
+.a-cropper {
+  position: fixed;
+  inset: 0;
+  /* Above the admin console's own .a-modal (z-index 100, admin.css) — the
+     event/org/team editors are themselves modals, and cropping an image
+     inside one of those forms has to layer on top of it, not behind it. */
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3xl);
+  background: var(--colour-alpha-60);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.a-cropper__box {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.a-cropper__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  padding: var(--space-2xl) var(--space-3xl);
+  border-bottom: var(--width-lg) solid var(--colour-gray-600);
+}
+
+.a-cropper__title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.a-cropper__close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-md);
+  line-height: 1;
+  cursor: pointer;
+}
+.a-cropper__close:hover { background: var(--bg-hover); color: var(--text-brand); }
+
+.a-cropper__stage {
+  display: grid;
+  place-items: center;
+  padding: var(--space-3xl);
+  background: var(--colour-gray-950);
+}
+
+/* Fixed to the field's own aspect ratio in JS (dropzone.js#openCropper),
+   not CSS — the same rule has to fit a near-square avatar and a 4:1 banner
+   equally well, which a single hardcoded box can't do. Everything the user
+   sees is the crop: no marquee to drag past an edge, just the image
+   panning underneath a window sized exactly to what gets kept. */
+.a-cropper__viewport {
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  border-radius: var(--radius-sm);
+  /* Checkerboard so a transparent PNG (an org logo, a favicon) reads as
+     "see-through" rather than an unexplained flat colour showing through. */
+  background-image:
+    linear-gradient(45deg, var(--colour-gray-800) 25%, transparent 25%, transparent 75%, var(--colour-gray-800) 75%),
+    linear-gradient(45deg, var(--colour-gray-800) 25%, transparent 25%, transparent 75%, var(--colour-gray-800) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+  background-color: var(--colour-gray-950);
+  touch-action: none;   /* the drag itself is what should scroll/pan, not the page under it */
+}
+.a-cropper__viewport--dragging { cursor: grabbing; }
+
+.a-cropper__img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;   /* overrides the global img rule — width/height are set in px by JS */
+  user-select: none;
+  pointer-events: none;   /* the viewport owns the drag; the <img> itself never needs to */
+}
+
+.a-cropper__zoom-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl) var(--space-3xl) 0;
+}
+
+.a-cropper__zoom-icon {
+  flex: none;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-sm);
+  line-height: 1;
+}
+
+.a-cropper__zoom {
+  flex: 1;
+  accent-color: var(--colour-orange-500);
+}
+
+.a-cropper__hint {
+  margin: var(--space-md) var(--space-3xl) 0;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body-2xs);
+  text-align: center;
+}
+
+.a-cropper__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-lg);
+  padding: var(--space-3xl);
+}
+
+@media (max-width: 480px) {
+  .a-cropper__actions { flex-direction: column-reverse; }
+  .a-cropper__actions .a-btn { width: 100%; }
+}
 
 /* ==========================================================================
    SKELETON LOADER
