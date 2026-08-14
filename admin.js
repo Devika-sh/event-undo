@@ -46,6 +46,13 @@ const store = {
  *  site — keeps the Categories table and its editor from ever disagreeing. */
 const CATEGORY_GROUPS = ['mode', 'timing', 'organiser', 'topic'];
 
+/** How many events can be featured (shown in the Discover homepage carousel)
+ *  at once. Mirrors the DB's enforce_featured_cap trigger in
+ *  supabase-schema.sql — kept in sync there manually since the UI needs the
+ *  number to grey out the picker before the database ever gets a chance to
+ *  reject anything. */
+const MAX_FEATURED = 5;
+
 const VIEWS = {
   overview:      { title: 'Overview',      sub: 'How the platform is doing right now' },
   events:        { title: 'Events',        sub: 'Create, edit and publish events' },
@@ -556,6 +563,13 @@ async function loadEvents() {
   renderEvents();
 }
 
+/** Solid brand-fill star, inlined (not a masked background-image like the
+ *  action-button glyphs) so its colour can just be `currentColor` against
+ *  whatever badge it sits in. */
+const STAR_SVG = `<svg class="a-badge__star" viewBox="0 0 20 20" aria-hidden="true">
+  <path d="M10 1.5l2.47 5.77 6.24.54-4.73 4.13 1.42 6.1L10 14.9l-5.4 3.14 1.42-6.1L1.29 7.81l6.24-.54L10 1.5z"/>
+</svg>`;
+
 function renderEvents() {
   const term = $('#events-search').value.trim().toLowerCase();
   const status = $('#events-status').value;
@@ -567,8 +581,16 @@ function renderEvents() {
     (!term || `${e.title} ${e.organizer || ''} ${(e.tags || []).join(' ')}`.toLowerCase().includes(term))
   );
 
-  $('#events-rows').innerHTML = rows.length ? rows.map((e) => `
-    <tr>
+  // Featured events pin to the top. A plain boolean-descending sort would
+  // still leave them in whatever order .filter() happened to hand back, so
+  // this is stable by construction rather than relying on sort() stability:
+  // walk the already status/org/search-filtered list once and bucket it.
+  const featured = rows.filter((e) => e.is_featured);
+  const rest = rows.filter((e) => !e.is_featured);
+  const ordered = featured.concat(rest);
+
+  $('#events-rows').innerHTML = ordered.length ? ordered.map((e) => `
+    <tr${e.is_featured ? ' data-featured' : ''}>
       <td>
         <div class="a-cell-media">
           ${e.thumbnail_url || e.banner_url
@@ -584,7 +606,7 @@ function renderEvents() {
           <span class="a-cell-sub">${esc(formatTime(e.starts_at))}</span></td>
       <td><span class="a-badge">${esc(e.mode)}</span></td>
       <td>${esc(formatFee(e.fee_amount, e.currency))}</td>
-      <td>${statusBadge(e.status)}${e.is_featured ? ' <span class="a-badge a-badge--soft">featured</span>' : ''}</td>
+      <td>${statusBadge(e.status)}${e.is_featured ? ` <span class="a-badge a-badge--featured">${STAR_SVG}featured</span>` : ''}</td>
       <td>${e.save_count || 0}</td>
       <td>${e.rsvp_count || 0}</td>
       <td>
@@ -821,11 +843,22 @@ function eventForm(ev = {}) {
       </div>
       <div class="a-field">
         <span class="a-field__label">Featured</span>
-        <label class="a-switch">
-          <input type="checkbox" id="ev-featured"${ev.is_featured ? ' checked' : ''} />
+        ${(() => {
+          const featuredCount = store.events.filter((e) => e.is_featured && e.id !== ev.id).length;
+          const atCap = featuredCount >= MAX_FEATURED;
+          return `
+        <label class="a-switch${atCap && !ev.is_featured ? ' a-switch--disabled' : ''}">
+          <input type="checkbox" id="ev-featured"${ev.is_featured ? ' checked' : ''}
+                 ${atCap && !ev.is_featured ? 'disabled' : ''} />
           <span class="a-switch__track" aria-hidden="true"></span>
-          <span>Show in the Discover hero</span>
+          <span>Show in the homepage carousel</span>
         </label>
+        <span class="a-field__hint">
+          ${atCap && !ev.is_featured
+            ? `${MAX_FEATURED} events are already featured — turn one off (Events, or Settings → Featured events) to add this one.`
+            : `${featuredCount + (ev.is_featured ? 1 : 0)} of ${MAX_FEATURED} slots used.`}
+        </span>`;
+        })()}
       </div>
     </div>
   </form>`;
@@ -1930,9 +1963,17 @@ async function openTeamEditor(id) {
         </select>
         <span class="a-field__hint">Shown as a highlighted badge on their public card.</span>
       </div>
-      <div class="a-field">
-        <label class="a-field__label" for="tm-photo">Photo URL</label>
-        <input class="a-input" id="tm-photo" value="${esc(m.photo_url || '')}" />
+      <div class="a-form__row">
+        <div class="a-field">
+          <label class="a-field__label" for="tm-photo">Photo URL</label>
+          <input class="a-input" id="tm-photo" value="${esc(m.photo_url || '')}" />
+        </div>
+        <div class="a-field">
+          <label class="a-field__label" for="tm-photo-file">Upload photo</label>
+          <div class="a-dropzone" data-dropzone data-input-id="tm-photo-file" data-accept="image/*"
+               data-hint="JPEG or PNG, up to 5MB"></div>
+          <span class="a-field__hint">Best size 500 × 500px (square).</span>
+        </div>
       </div>
       <div class="a-form__row">
         <div class="a-field">
@@ -1962,6 +2003,7 @@ async function openTeamEditor(id) {
       </div>
     </form>`,
     onMount: (body) => {
+      initDropzones(body);
       body.querySelectorAll('#tm-interests .chip').forEach((chip) => {
         chip.addEventListener('click', () => chip.classList.toggle('chip--selected'));
       });
@@ -1979,11 +2021,19 @@ async function saveTeamMember(id, btn) {
   if (!name) { setError('team-error', 'Name is required.'); return; }
 
   btn.disabled = true;
+
+  let photoUrl = $('#tm-photo').value.trim();
+  const photoFile = $('#tm-photo-file').files[0];
+  if (photoFile) {
+    const uploaded = await uploadMedia(photoFile, 'team');
+    if (uploaded) photoUrl = uploaded;
+  }
+
   const payload = {
     name,
     role_title: $('#tm-role').value.trim() || null,
     organization_id: $('#tm-org').value || null,
-    photo_url: $('#tm-photo').value.trim() || null,
+    photo_url: photoUrl || null,
     instagram_url: $('#tm-instagram').value.trim() || null,
     linkedin_url: $('#tm-linkedin').value.trim() || null,
     sort_order: Number($('#tm-order').value || 0),
