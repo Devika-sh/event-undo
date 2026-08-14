@@ -99,6 +99,8 @@
   height: 300px;
   border-radius: var(--radius-2xl);
   overflow: hidden;
+  /* Small lift so the cover art reads as sitting above the masthead behind it. */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .banner__photo {
@@ -227,8 +229,8 @@
   transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-/* Inner filled dot — scales in rather than just fading, so the selected
-   state reads as a deliberate mark rather than a colour flip. */
+/* Inner filled dot — scales in with a slight overshoot rather than just
+   fading, so the selected state reads as a deliberate, snappy mark. */
 .radio__dot {
   width: 10px;
   height: 10px;
@@ -236,13 +238,15 @@
   background: var(--icon-white);
   opacity: 0;
   transform: scale(0.4);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition: opacity 160ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Selected — brand fill, light border-active ring, white dot. */
+/* Selected — solid brand fill, border matched to it rather than the lighter
+   border-active token: at 20px a mismatched border reads as a seam around
+   the dot instead of one clean filled circle. */
 .radio__input:checked + .radio__box {
   background: var(--bg-brand);
-  border-color: var(--border-active);
+  border-color: var(--bg-brand);
 }
 .radio__input:checked + .radio__box .radio__dot {
   opacity: 1;
@@ -484,12 +488,6 @@
 .more-events__track > .card {
   flex: 0 0 min(400px, 100%);
   scroll-snap-align: start;
-  /* Layers a small drop shadow under the component's own inset brand-edge
-     stroke (styles.css .card) rather than replacing it — box-shadow only
-     takes the last declaration that sets it, so both live in this one value. */
-  box-shadow:
-    inset calc(-1 * var(--width-2xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand),
-    0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 /* --- Chevron Button (Navigation) ---
@@ -698,11 +696,8 @@
   /* Card's lifted brand edge scales down from width/2xl (3) on both sides to
      an asymmetric width/xl (2) right / width/2xl (3) bottom — the same
      downshift the Profile Card's and Org Card's mobile variants make. Scoped
-     to this page: the shared .card rule elsewhere is untouched. Keeps the
-     drop shadow from the base rule above alongside the resized inset edge. */
+     to this page: the shared .card rule elsewhere is untouched. */
   .detail-page .card {
-    box-shadow:
-      inset calc(-1 * var(--width-xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand),
-      0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: inset calc(-1 * var(--width-xl)) calc(-1 * var(--width-2xl)) 0 0 var(--border-brand);
   }
 }
