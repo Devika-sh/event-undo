@@ -330,21 +330,31 @@ drop trigger if exists profiles_touch on public.profiles;
 create trigger profiles_touch before update on public.profiles
   for each row execute function public.touch_updated_at();
 
--- Only ever one featured event.
-create or replace function public.enforce_single_featured()
+-- Up to MAX_FEATURED events at once (the homepage carousel), not just one —
+-- replaces the old enforce_single_featured/events_single_featured pair, which
+-- silently unfeatured every other event the moment a new one was picked, on
+-- the assumption there could only ever be one. Rejects outright rather than
+-- e.g. bumping the oldest, so the admin dashboard's own cap-of-5 chip picker
+-- (the UI's only way to feature an event) never even offers a 6th — this is
+-- the backstop for anything that reaches the table directly.
+create or replace function public.enforce_featured_cap()
 returns trigger language plpgsql as $$
 begin
-  if new.is_featured then
-    update public.events set is_featured = false
-    where id <> new.id and is_featured;
+  if new.is_featured and (
+    select count(*) from public.events where is_featured and id <> new.id
+  ) >= 5 then
+    raise exception 'At most 5 events can be featured at once.';
   end if;
   return new;
 end;
 $$;
 
 drop trigger if exists events_single_featured on public.events;
-create trigger events_single_featured after insert or update of is_featured on public.events
-  for each row when (new.is_featured) execute function public.enforce_single_featured();
+drop function if exists public.enforce_single_featured();
+
+drop trigger if exists events_featured_cap on public.events;
+create trigger events_featured_cap before insert or update of is_featured on public.events
+  for each row when (new.is_featured) execute function public.enforce_featured_cap();
 
 -- Only an admin's approval can put an event live. If a volunteer (or anyone
 -- forging a direct API call) tries to move a non-published event straight to
@@ -558,7 +568,13 @@ create policy activity_insert on public.activity_log
 -- 4. Convenience views (public read, joins already resolved)
 -- --------------------------------------------------------------------------
 
-create or replace view public.events_public as
+-- create or replace view can only append new columns at the end — inserting
+-- thumbnail_url anywhere else shifts every later column's position, which
+-- Postgres reports as "cannot change name of view column". Drop first so the
+-- column order below can just read naturally, banner_url and thumbnail_url
+-- together.
+drop view if exists public.events_public;
+create view public.events_public as
   select
     e.id, e.title, e.slug, e.summary, e.description, e.thumbnail_url, e.banner_url,
     e.starts_at, e.ends_at, e.venue, e.mode, e.fee_amount, e.currency,

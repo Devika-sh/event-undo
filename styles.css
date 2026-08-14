@@ -244,32 +244,47 @@ body.is-scrolled .scroll-shade { opacity: 1; }
 }
 
 /* Hidden at rest — the hero picture already carries the wordmark. Revealed
-   next to the pinned nav once body picks up .is-scrolled (see the shared
-   scroll listener in each page's script), sliding in from the left.
-   Only shown from 1300px up: the nav pill's own link spacing already runs
-   ~850px wide, so below that there isn't reliably clear room beside it for
-   the logo without the two crowding or overlapping. */
+   to the left of the pinned pill once body picks up .is-scrolled (see the
+   shared scroll listener in each page's script).
+   A real flex sibling of .navbar now (was position: absolute, pinned to a
+   fixed offset off the wrap's edge) — collapsed to zero width pre-scroll so
+   it costs nothing in the layout, then widens open in step with the pill
+   growing beside it, rather than a separate decoration floating near it. Only
+   shown from 1300px up: the nav pill's own link spacing already runs ~850px
+   wide, so below that there isn't reliably clear room beside it for the logo
+   without the two crowding or overlapping. */
 .masthead__logo { display: none; }
 
 @media (min-width: 1300px) {
   .masthead__logo {
-    display: block;
-    position: absolute;
-    left: var(--space-5xl);
-    top: 50%;
-    width: 151px;
-    height: 25px;
+    display: flex;
+    align-items: center;
+    flex: none;
+    width: 0;
+    margin-right: 0;
+    overflow: hidden;
     opacity: 0;
-    transform: translateY(-50%) translateX(-24px);
     pointer-events: none;
-    transition: opacity 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    transition: width 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                margin-right 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
 
+  .masthead__logo img { flex: none; width: 151px; height: 25px; }
+
   body.is-scrolled .masthead__logo {
+    width: 151px;
+    margin-right: var(--space-2xl);
     opacity: 1;
-    transform: translateY(-50%) translateX(0);
     pointer-events: auto;
+  }
+
+  /* Collapses back with the pill when the bar hides on scroll-down, instead
+     of sitting there fully opened with nothing left beside it. */
+  body.is-nav-hidden .masthead__logo {
+    width: 0;
+    margin-right: 0;
+    opacity: 0;
   }
 }
 
@@ -306,18 +321,30 @@ body.is-nav-hidden .navbar-mobile {
   transition-duration: 500ms;
 }
 
-/* The fly-in logo rides with the pill rather than being left behind, and the
-   blur that backs the nav has nothing left to back once it's gone. */
-body.is-nav-hidden .masthead__logo { opacity: 0; }
+/* The fly-in logo collapsing with the pill when hidden (see the ≥1300px
+   block above) already keeps it from being left behind; the blur backing the
+   nav has nothing left to back once it's gone either. */
 body.is-scrolled.is-nav-hidden .scroll-shade { opacity: 0; }
 
 /* Small lift once the page scrolls — no shadow token exists in the design
    system (the footer spec explicitly says "no shadows"), so this stays a
    deliberately light, raw rgba rather than a bound token. Applied to the
    pill itself (not the invisible bar/wrap around it) so it reads as the
-   nav lifting off the page, not a box floating behind it. */
+   nav lifting off the page, not a box floating behind it.
+   Also tightens the pill's own gap/padding down to the same compact tokens
+   the ≤1100px tablet breakpoint uses — with the logo now opening up beside
+   it (above), the pill shrinking to make room reads as one bar coming
+   together, not the logo just being squeezed in next to a still-full-size
+   one. Same values as the tablet rule below, so a scrolled+narrow visitor
+   never sees the two disagree. */
 body.is-scrolled .navbar {
+  gap: var(--space-2xl);
+  padding: var(--space-md) var(--space-2xl);
   box-shadow: 0 var(--space-xs) var(--space-lg) 0 rgba(0, 0, 0, 0.1);
+}
+
+body.is-scrolled .navbar__link {
+  padding: var(--space-sm) var(--space-lg);
 }
 
 .navbar__link {
