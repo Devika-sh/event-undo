@@ -451,6 +451,28 @@ body.is-scrolled .navbar-mobile {
 
 .mobile-menu[data-open] .mobile-menu__layer { transform: translateY(0); }
 
+/* Closing plays the wipe in reverse: whichever layer arrived last (4, the
+   page-colour layer, delay 250) leaves first, peeling back through the
+   oranges in reverse order until layer 1 — first to arrive — is also last
+   to retreat. Delays here are each layer's opening delay mirrored around
+   the 250ms span the four layers spread across. */
+.mobile-menu:not([data-open]) .mobile-menu__layer:nth-child(1) {
+  transition-duration: 730ms;
+  transition-delay: 250ms;
+}
+.mobile-menu:not([data-open]) .mobile-menu__layer:nth-child(2) {
+  transition-duration: 730ms;
+  transition-delay: 145ms;
+}
+.mobile-menu:not([data-open]) .mobile-menu__layer:nth-child(3) {
+  transition-duration: 630ms;
+  transition-delay: 145ms;
+}
+.mobile-menu:not([data-open]) .mobile-menu__layer:nth-child(4) {
+  transition-duration: 520ms;
+  transition-delay: 0ms;
+}
+
 /* Content rides above every wipe layer. */
 .mobile-menu__links,
 .mobile-menu__mark {
@@ -494,11 +516,16 @@ body.is-scrolled .navbar-mobile {
 .mobile-menu[data-open] .mobile-menu__link:nth-child(3) { transition-delay: 540ms; }
 .mobile-menu[data-open] .mobile-menu__link:nth-child(4) { transition-delay: 600ms; }
 
-/* Closing: everything leaves at once, quickly. */
+/* Closing reverses the entrance stagger: the last link to arrive (4) is the
+   first to leave, same durations/delay-span as the open stagger but mirrored,
+   with the entrance's ease-out swapped for its ease-in inverse. */
 .mobile-menu:not([data-open]) .mobile-menu__link {
-  transition-duration: 160ms;
-  transition-delay: 0ms;
+  transition: opacity 320ms linear, transform 520ms var(--ease-in-cubic);
 }
+.mobile-menu:not([data-open]) .mobile-menu__link:nth-child(1) { transition-delay: 180ms; }
+.mobile-menu:not([data-open]) .mobile-menu__link:nth-child(2) { transition-delay: 120ms; }
+.mobile-menu:not([data-open]) .mobile-menu__link:nth-child(3) { transition-delay: 60ms; }
+.mobile-menu:not([data-open]) .mobile-menu__link:nth-child(4) { transition-delay: 0ms; }
 
 .mobile-menu__link:hover { color: var(--text-primary); }
 .mobile-menu__link--active { color: var(--text-brand); }
@@ -518,6 +545,10 @@ body.is-scrolled .navbar-mobile {
 .mobile-menu[data-open] .mobile-menu__mark {
   opacity: 1;
   transition-delay: 560ms;
+}
+/* It was the last thing to finish arriving (880ms), so it's the first to go. */
+.mobile-menu:not([data-open]) .mobile-menu__mark {
+  transition-delay: 40ms;
 }
 
 @media (min-width: 721px) {
